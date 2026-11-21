@@ -69,7 +69,7 @@ def same_origin(request):
 
 
 async def index(request):
-    response = web.FileResponse(ROOT / "index.html")
+    response = web.FileResponse(Path(request.app["config"].get("html_path", str(ROOT / "index.html"))))
     response.headers["Cache-Control"] = "no-store"
     response.headers["Content-Security-Policy"] = (
         "default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; "
