@@ -39,7 +39,7 @@
   </section>
   <section id="terminalView" hidden>
     <div class="toolbar"><div><span class="dot" id="dot"></span><span id="connection">Connecting…</span></div><div class="toolbar-actions"><button class="secondary" id="displayMode" type="button" aria-pressed="true" title="Toggle stretched terminal display">Stretch: On</button><button class="secondary" id="fullscreen" type="button" title="Toggle fullscreen (Esc to exit)">Fullscreen</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary" id="logout">Log out</button></div></div>
-    <div id="screen"></div><p>3270 keyboard: Tab, Enter, F1–F12 · Paste: Ctrl+V / Ctrl+Shift+V · Copy selection: Ctrl+Shift+C</p>
+    <div id="screen"></div><p>3270 keyboard: Tab, Enter, F1–F12 · iPad: Cmd+1…9 = PF1…9, Cmd+0 = PF10, Cmd+- = PF11, Cmd+= = PF12 · Paste: Ctrl+V</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
@@ -51,6 +51,25 @@
   let resizeTerminal=()=>{};
   const isIPad=/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
   let stretch = true;
+  const functionKeys={
+    '1':'\x1bOP','2':'\x1bOQ','3':'\x1bOR','4':'\x1bOS',
+    '5':'\x1b[15~','6':'\x1b[17~','7':'\x1b[18~','8':'\x1b[19~',
+    '9':'\x1b[20~','0':'\x1b[21~','-':'\x1b[23~','=':'\x1b[24~'
+  };
+  function sendTerminalInput(data){
+    if(!socket || socket.readyState!==WebSocket.OPEN)return;
+    const bytes=new TextEncoder().encode(data);
+    let s='';for(const b of bytes)s+=String.fromCharCode(b);
+    socket.send(btoa(s));
+  }
+  document.addEventListener('keydown',event=>{
+    if(!isIPad || !term || $('terminalView').hidden || !event.metaKey || event.ctrlKey || event.altKey || event.shiftKey)return;
+    const key=event.key;
+    if(!Object.prototype.hasOwnProperty.call(functionKeys,key))return;
+    event.preventDefault();
+    event.stopPropagation();
+    sendTerminalInput(functionKeys[key]);
+  },true);
   function syncFullscreen(){
     const full=!!document.fullscreenElement || $('terminalView').classList.contains('pseudo-fullscreen');
     $('fullscreen').textContent=full?'Exit fullscreen':'Fullscreen';
@@ -164,7 +183,7 @@
     socket.onclose=()=>{ $('connection').textContent='Disconnected';$('dot').style.background='#f38b86'; };
     socket.onerror=()=>{$('connection').textContent='Connection error';};
     socket.onmessage=e=>{const binary=atob(e.data);const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));term.write(bytes);};
-    term.onData(data=>{if(socket.readyState===WebSocket.OPEN){const bytes=new TextEncoder().encode(data);let s='';for(const b of bytes)s+=String.fromCharCode(b);socket.send(btoa(s));}});
+    term.onData(sendTerminalInput);
   }
   check();
 </script>
