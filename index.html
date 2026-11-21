@@ -38,7 +38,7 @@
     <form id="loginForm"><label for="password">Access password</label><input id="password" type="password" autocomplete="current-password" required autofocus><p id="error" role="alert"></p><button type="submit">Connect to MVS</button></form>
   </section>
   <section id="terminalView" hidden>
-    <div class="toolbar"><div><span class="dot" id="dot"></span><span id="connection">Connecting…</span></div><div class="toolbar-actions"><button class="secondary" id="displayMode" type="button" aria-pressed="true" title="Toggle stretched terminal display">Stretch: On</button><button class="secondary" id="fullscreen" type="button" title="Toggle fullscreen (Esc to exit)">Fullscreen</button><button class="secondary" id="logout">Log out</button></div></div>
+    <div class="toolbar"><div><span class="dot" id="dot"></span><span id="connection">Connecting…</span></div><div class="toolbar-actions"><button class="secondary" id="displayMode" type="button" aria-pressed="true" title="Toggle stretched terminal display">Stretch: On</button><button class="secondary" id="fullscreen" type="button" title="Toggle fullscreen (Esc to exit)">Fullscreen</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary" id="logout">Log out</button></div></div>
     <div id="screen"></div><p>3270 keyboard: Tab, Enter, F1–F12 · Paste: Ctrl+V / Ctrl+Shift+V · Copy selection: Ctrl+Shift+C</p>
   </section>
 </main>
@@ -71,6 +71,13 @@
     }catch(err){$('error').textContent=err.message;}
   });
   $('logout').addEventListener('click',async()=>{await exitTerminalFullscreen();if(socket)socket.close();if(screenObserver){screenObserver.disconnect();screenObserver=null;}if(term){term.dispose();term=null;}$('screen').replaceChildren();await fetch(base+'logout',{method:'POST'});showLogin();});
+  $('disconnect').addEventListener('click',async()=>{
+    if(!confirm('Disconnect the MVS session? Unsaved work in MVS may be lost.'))return;
+    const result=await fetch(base+'disconnect',{method:'POST'});
+    if(!result.ok){alert('Could not disconnect MVS.');return;}
+    if(socket)socket.close();
+    if(term)term.write('\r\n\r\nMVS disconnected. Reload this page to start a new session.\r\n');
+  });
   $('fullscreen').addEventListener('click',async()=>{
     try{
       if(document.fullscreenElement || $('terminalView').classList.contains('pseudo-fullscreen')){
