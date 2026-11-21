@@ -9,7 +9,6 @@ import json
 import os
 import pty
 import secrets
-import signal
 import struct
 import sys
 import termios
@@ -24,6 +23,7 @@ ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = Path(os.environ.get("WEB3270_CONFIG", "/etc/web3270/config.json"))
 COOKIE = "web3270_session"
 SESSION_SECONDS = 8 * 60 * 60
+REPLAY_LIMIT = 1024 * 1024
 
 
 def password_hash(password):
@@ -118,37 +118,145 @@ async def logout(request):
     return response
 
 
+class PersistentTerminal:
+    """One c3270 process shared by successive authenticated browsers."""
+
+    def __init__(self, app):
+        self.app = app
+        self.client = None
+        self.process = None
+        self.master = None
+        self.reader = None
+        self.timer = None
+        self.replay = bytearray()
+        self.send_lock = asyncio.Lock()
+
+    async def start(self):
+        config = self.app["config"]
+        master, slave = pty.openpty()
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "c3270", "-model", "3279-2", f'{config["mvs_host"]}:{config["mvs_port"]}',
+                stdin=slave, stdout=slave, stderr=slave,
+                env={**os.environ, "TERM": "xterm"}, start_new_session=True,
+            )
+        except BaseException:
+            os.close(master)
+            raise
+        finally:
+            os.close(slave)
+        self.master = master
+        self.process = process
+        self.replay.clear()
+        self.reader = asyncio.create_task(self.read_output())
+
+    async def read_output(self):
+        loop = asyncio.get_running_loop()
+        while True:
+            try:
+                data = await loop.run_in_executor(None, os.read, self.master, 4096)
+            except OSError:
+                break
+            if not data:
+                break
+            async with self.send_lock:
+                self.replay.extend(data)
+                if len(self.replay) > REPLAY_LIMIT:
+                    del self.replay[:len(self.replay) - REPLAY_LIMIT]
+                client = self.client
+                if client and not client.closed:
+                    try:
+                        await client.send_str(base64.b64encode(data).decode("ascii"))
+                    except ConnectionError:
+                        pass
+        if self.client and not self.client.closed:
+            await self.client.close(message=b"MVS connection ended")
+
+    def detach(self, client):
+        if self.client is not client:
+            return
+        self.client = None
+        if self.timer:
+            self.timer.cancel()
+        delay = int(self.app["config"].get("session_timeout_minutes", 60)) * 60
+        self.timer = asyncio.get_running_loop().call_later(delay, lambda: asyncio.create_task(self.expire()))
+
+    async def expire(self):
+        async with self.app["terminal_lock"]:
+            if self.client is None and self.app["terminal_session"] is self:
+                await self.stop()
+                self.app["terminal_session"] = None
+
+    async def attach(self, client):
+        if self.timer:
+            self.timer.cancel()
+            self.timer = None
+        previous = self.client
+        # A new browser takes over the single terminal. No second MVS login.
+        self.client = client
+        if previous and previous is not client and not previous.closed:
+            await previous.close(code=4001, message=b"Session opened elsewhere")
+        async with self.send_lock:
+            if self.replay:
+                # Replays the terminal's ANSI updates to reconstruct its last screen.
+                for offset in range(0, len(self.replay), 16384):
+                    await client.send_str(base64.b64encode(self.replay[offset:offset + 16384]).decode("ascii"))
+
+    async def stop(self):
+        if self.timer:
+            self.timer.cancel()
+            self.timer = None
+        client, self.client = self.client, None
+        if client and not client.closed:
+            await client.close(code=4002, message=b"MVS disconnected")
+        process, self.process = self.process, None
+        if process and process.returncode is None:
+            process.terminate()
+            try:
+                await asyncio.wait_for(process.wait(), timeout=2)
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
+        if self.master is not None:
+            os.close(self.master)
+            self.master = None
+        if self.reader:
+            self.reader.cancel()
+            await asyncio.gather(self.reader, return_exceptions=True)
+            self.reader = None
+        self.replay.clear()
+
+
+async def disconnect(request):
+    if not authenticated(request) or not same_origin(request):
+        raise web.HTTPForbidden()
+    async with request.app["terminal_lock"]:
+        session = request.app["terminal_session"]
+        if session:
+            await session.stop()
+            request.app["terminal_session"] = None
+    return web.json_response({"ok": True})
+
+
 async def terminal(request):
     if not authenticated(request) or not same_origin(request):
         raise web.HTTPForbidden()
     ws = web.WebSocketResponse(heartbeat=30, max_msg_size=16384)
     await ws.prepare(request)
-    cfg = request.app["config"]
-    master, slave = pty.openpty()
-    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
-    child = None
-    reader_task = None
+    app = request.app
+    session = None
     try:
-        child = await asyncio.create_subprocess_exec(
-            "c3270", "-model", "3279-2", f'{cfg["mvs_host"]}:{cfg["mvs_port"]}',
-            stdin=slave, stdout=slave, stderr=slave,
-            env={**os.environ, "TERM": "xterm"}, start_new_session=True,
-        )
-        os.close(slave)
-        slave = -1
+        async with app["terminal_lock"]:
+            session = app["terminal_session"]
+            if session is None or session.process is None or session.process.returncode is not None:
+                if session is not None:
+                    await session.stop()
+                session = PersistentTerminal(app)
+                await session.start()
+                app["terminal_session"] = session
+            await session.attach(ws)
         loop = asyncio.get_running_loop()
-
-        async def relay_output():
-            while True:
-                try:
-                    data = await loop.run_in_executor(None, os.read, master, 4096)
-                except OSError:
-                    break
-                if not data:
-                    break
-                await ws.send_str(base64.b64encode(data).decode("ascii"))
-
-        reader_task = asyncio.create_task(relay_output())
         async for message in ws:
             if message.type == WSMsgType.TEXT:
                 try:
@@ -156,7 +264,8 @@ async def terminal(request):
                     if len(data) > 4096:
                         await ws.close(code=1009)
                         break
-                    await loop.run_in_executor(None, os.write, master, data)
+                    if session.client is ws and session.master is not None:
+                        await loop.run_in_executor(None, os.write, session.master, data)
                 except (ValueError, OSError):
                     break
             elif message.type == WSMsgType.ERROR:
@@ -164,21 +273,16 @@ async def terminal(request):
     except FileNotFoundError:
         await ws.send_str(base64.b64encode(b"\r\nc3270 is not installed.\r\n").decode())
     finally:
-        if child and child.returncode is None:
-            child.terminate()
-            try:
-                await asyncio.wait_for(child.wait(), timeout=2)
-            except asyncio.TimeoutError:
-                child.kill()
-                await child.wait()
-        if reader_task:
-            reader_task.cancel()
-            await asyncio.gather(reader_task, return_exceptions=True)
-        os.close(master)
-        if slave != -1:
-            os.close(slave)
+        if session:
+            session.detach(ws)
         await ws.close()
     return ws
+
+
+async def shutdown(app):
+    session = app["terminal_session"]
+    if session:
+        await session.stop()
 
 
 def main():
@@ -198,12 +302,18 @@ def main():
         sys.exit("Configure a random session secret first")
     if cfg["listen_host"] not in ("127.0.0.1", "::1"):
         sys.exit("For safety, listen_host must be localhost")
+    if not 1 <= int(cfg.get("session_timeout_minutes", 60)) <= 1440:
+        sys.exit("session_timeout_minutes must be between 1 and 1440")
     app = web.Application(client_max_size=2048)
     app["config"] = cfg
+    app["terminal_lock"] = asyncio.Lock()
+    app["terminal_session"] = None
+    app.on_shutdown.append(shutdown)
     app.router.add_get("/", index)
     app.router.add_get("/status", status)
     app.router.add_post("/login", login)
     app.router.add_post("/logout", logout)
+    app.router.add_post("/disconnect", disconnect)
     app.router.add_get("/ws", terminal)
     web.run_app(app, host=cfg["listen_host"], port=int(cfg["listen_port"]))
 
