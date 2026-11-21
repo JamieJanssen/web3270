@@ -8,7 +8,6 @@ import hmac
 import json
 import os
 import pty
-import re
 import secrets
 import signal
 import struct
@@ -72,15 +71,13 @@ def same_origin(request):
 async def index(request):
     html_path = Path(request.app["config"].get("html_path", str(ROOT / "index.html")))
     html = html_path.read_bytes()
-    inline_scripts = re.findall(rb"<script(?:\s[^>]*)?>(.*?)</script\s*>", html, flags=re.DOTALL | re.IGNORECASE)
-    script_hashes = " ".join(
-        "'sha256-" + base64.b64encode(hashlib.sha256(script).digest()).decode("ascii") + "'"
-        for script in inline_scripts
-    )
+    nonce = secrets.token_urlsafe(24)
+    # Only our single inline application script gets a one-time CSP nonce.
+    html = html.replace(b"<script>", f'<script nonce="{nonce}">'.encode("ascii"))
     response = web.Response(body=html, content_type="text/html", charset="utf-8")
     response.headers["Cache-Control"] = "no-store"
     response.headers["Content-Security-Policy"] = (
-        f"default-src 'none'; script-src 'self' https://cdn.jsdelivr.net {script_hashes}; "
+        f"default-src 'none'; script-src 'self' https://cdn.jsdelivr.net 'nonce-{nonce}'; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
         "connect-src 'self' wss:; font-src 'self' https://cdn.jsdelivr.net; "
         "img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'"
