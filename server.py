@@ -125,12 +125,12 @@ async def terminal(request):
     await ws.prepare(request)
     cfg = request.app["config"]
     master, slave = pty.openpty()
-    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 43, 80, 0, 0))
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
     child = None
     reader_task = None
     try:
         child = await asyncio.create_subprocess_exec(
-            "c3270", "-model", "3279-4", f'{cfg["mvs_host"]}:{cfg["mvs_port"]}',
+            "c3270", "-model", "3279-2", f'{cfg["mvs_host"]}:{cfg["mvs_port"]}',
             stdin=slave, stdout=slave, stderr=slave,
             env={**os.environ, "TERM": "xterm"}, start_new_session=True,
         )
