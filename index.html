@@ -35,7 +35,7 @@
   </section>
   <section id="terminalView" hidden>
     <div class="toolbar"><div><span class="dot" id="dot"></span><span id="connection">Connecting…</span></div><div class="toolbar-actions"><button class="secondary" id="displayMode" type="button" aria-pressed="true" title="Toggle stretched terminal display">Stretch: On</button><button class="secondary" id="fullscreen" type="button" title="Toggle fullscreen (Esc to exit)">Fullscreen</button><button class="secondary" id="logout">Log out</button></div></div>
-    <div id="screen"></div><p>3270 keyboard: use Tab, Enter and function keys (F1–F12). Click the screen to focus.</p>
+    <div id="screen"></div><p>3270 keyboard: Tab, Enter, F1–F12 · Paste: Ctrl+V / Ctrl+Shift+V · Copy selection: Ctrl+Shift+C</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
@@ -90,6 +90,25 @@
     if(term){term.dispose();$('screen').replaceChildren();}
     term=new Terminal({cols:80,rows:24,fontFamily:'monospace',fontSize:16,theme:{background:'#252b2d',foreground:'#a9ead2',cursor:'#73e8c5'},cursorBlink:true,scrollback:0});
     term.open($('screen'));term.focus();
+    term.attachCustomKeyEventHandler(event=>{
+      const shortcut=event.ctrlKey||event.metaKey;
+      const key=event.key.toLowerCase();
+      if(!shortcut || !['v','c'].includes(key))return true;
+      const paste=key==='v';
+      if(!paste && !event.shiftKey)return true; // Ctrl+C stays a terminal key.
+      if(event.type==='keydown'){
+        event.preventDefault();
+        if(paste){
+          navigator.clipboard.readText().then(text=>{if(text && term)term.paste(text);})
+            .catch(error=>console.warn('Clipboard paste unavailable:',error));
+        }else{
+          const selection=term.getSelection();
+          if(selection)navigator.clipboard.writeText(selection)
+            .catch(error=>console.warn('Clipboard copy unavailable:',error));
+        }
+      }
+      return false;
+    });
     function fitTerminal(){
       if(!term)return;
       const screen=$('screen');
