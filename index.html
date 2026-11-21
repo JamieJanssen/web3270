@@ -10,15 +10,15 @@
     *{box-sizing:border-box}body{margin:0;background:#0a1018;color:#d8e9ed;min-height:100vh}
     header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #263849;background:#0e1925}
     .brand{font-weight:700;letter-spacing:.12em}.brand span{color:#6ad5bd}small{color:#91a6b8}
-    main{display:grid;place-items:center;min-height:calc(100vh - 64px);padding:24px}
+    main{display:grid;place-items:center;min-height:calc(100vh - 64px);padding:16px}
     .card{width:min(100%,390px);padding:32px;border:1px solid #294154;border-radius:14px;background:#122232;box-shadow:0 22px 70px #0006}
     h1{font-size:24px;margin:0 0 8px}p{color:#91a6b8;line-height:1.5}label{display:block;font-size:13px;margin:28px 0 9px}
     input{width:100%;background:#091521;border:1px solid #39576c;border-radius:7px;color:white;padding:13px;font:inherit}
     input:focus{outline:2px solid #6ad5bd}button{border:0;border-radius:7px;background:#6ad5bd;color:#071a1c;font-weight:700;padding:12px 19px;cursor:pointer}
     button:hover{background:#9df0db}button.secondary{background:#243d4e;color:#e2edef}#error{color:#ff9e9e;min-height:1.5em}
-    #terminalView{width:100%;max-width:1250px}#screen{background:#020709;border:1px solid #345061;border-radius:9px;padding:20px;overflow:auto;box-shadow:0 20px 70px #0008}
+    #terminalView{width:100%;align-self:stretch}#screen{display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:auto;box-shadow:0 20px 70px #0008;min-height:calc(100vh - 170px)}
     .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}.dot{display:inline-block;background:#eeae59;width:8px;height:8px;border-radius:50%;margin-right:7px}
-    .xterm{min-height:350px} [hidden]{display:none!important}
+    .xterm{flex:none} [hidden]{display:none!important}
     @media(max-width:700px){header{padding:0 16px}main{padding:12px}.card{padding:24px}#screen{padding:8px}}
   </style>
 </head>
@@ -52,8 +52,19 @@
   $('logout').addEventListener('click',async()=>{if(socket)socket.close();if(term){term.dispose();term=null;}$('screen').replaceChildren();await fetch(base+'logout',{method:'POST'});showLogin();});
   function connect(){
     if(term){term.dispose();$('screen').replaceChildren();}
-    term=new Terminal({cols:80,rows:43,fontFamily:'monospace',fontSize:16,theme:{background:'#020709',foreground:'#a9ead2',cursor:'#73e8c5'},cursorBlink:true,scrollback:1000});
+    term=new Terminal({cols:80,rows:43,fontFamily:'monospace',fontSize:16,theme:{background:'#252b2d',foreground:'#a9ead2',cursor:'#73e8c5'},cursorBlink:true,scrollback:1000});
     term.open($('screen'));term.focus();
+    function fitTerminal(){
+      if(!term)return;
+      const screen=$('screen');
+      const availableWidth=screen.clientWidth-36;
+      const availableHeight=screen.clientHeight-36;
+      // Keep fixed TN3270 model 4 dimensions (80x43); scale font, not rows/cols.
+      const font=Math.max(11,Math.min(30,Math.floor(Math.min(availableWidth/(80*0.62),availableHeight/(43*1.25)))));
+      term.options.fontSize=font;
+    }
+    fitTerminal();
+    window.addEventListener('resize',fitTerminal,{passive:true});
     const proto=location.protocol==='https:'?'wss:':'ws:';
     socket=new WebSocket(proto+'//'+location.host+base+'ws');
     socket.onopen=()=>{ $('connection').textContent='Connected';$('dot').style.background='#6ad5bd'; };
