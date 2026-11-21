@@ -2,6 +2,8 @@
 
 Minimal 3270 terminal at `https://jamiejets.com/mvs/`, using the existing NGINX HTTPS certificate.
 
+The terminal uses IBM 3270 Model 2 (80 columns × 24 rows). The frontend has a Normal/Stretch display toggle; stretching changes only the visual size, not the terminal geometry.
+
 ## Directory layout on Jester
 
 ```text
