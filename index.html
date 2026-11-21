@@ -17,8 +17,8 @@
     input:focus{outline:2px solid #6ad5bd}button{border:0;border-radius:7px;background:#6ad5bd;color:#071a1c;font-weight:700;padding:12px 19px;cursor:pointer}
     button:hover{background:#9df0db}button.secondary{background:#243d4e;color:#e2edef}#error{color:#ff9e9e;min-height:1.5em}
     #terminalView{width:100%;align-self:stretch}#screen{display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:auto;box-shadow:0 20px 70px #0008;min-height:calc(100vh - 170px)}
-    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}.dot{display:inline-block;background:#eeae59;width:8px;height:8px;border-radius:50%;margin-right:7px}
-    .xterm{flex:none} [hidden]{display:none!important}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}.toolbar-actions{display:flex;gap:8px;align-items:center}.dot{display:inline-block;background:#eeae59;width:8px;height:8px;border-radius:50%;margin-right:7px}
+    .xterm{flex:none;transform-origin:center center} [hidden]{display:none!important}
     @media(max-width:700px){header{padding:0 16px}main{padding:12px}.card{padding:24px}#screen{padding:8px}}
   </style>
 </head>
@@ -30,7 +30,7 @@
     <form id="loginForm"><label for="password">Access password</label><input id="password" type="password" autocomplete="current-password" required autofocus><p id="error" role="alert"></p><button type="submit">Connect to MVS</button></form>
   </section>
   <section id="terminalView" hidden>
-    <div class="toolbar"><div><span class="dot" id="dot"></span><span id="connection">Connecting…</span></div><button class="secondary" id="logout">Log out</button></div>
+    <div class="toolbar"><div><span class="dot" id="dot"></span><span id="connection">Connecting…</span></div><div class="toolbar-actions"><button class="secondary" id="displayMode" type="button" aria-pressed="true" title="Toggle stretched terminal display">Stretch: On</button><button class="secondary" id="logout">Log out</button></div></div>
     <div id="screen"></div><p>3270 keyboard: use Tab, Enter and function keys (F1–F12). Click the screen to focus.</p>
   </section>
 </main>
@@ -40,6 +40,7 @@
   const $ = id => document.getElementById(id);
   const base = location.pathname.replace(/\/?$/, '/');
   let socket, term;
+  let stretch = true;
   function showLogin(){ $('terminalView').hidden=true; $('loginView').hidden=false; $('password').focus(); }
   function showTerminal(){ $('loginView').hidden=true; $('terminalView').hidden=false; connect(); }
   async function check(){try{const r=await fetch(base+'status',{cache:'no-store'});const j=await r.json();j.authenticated?showTerminal():showLogin();}catch{showLogin();$('error').textContent='Server unavailable.';}}
@@ -50,6 +51,26 @@
     }catch(err){$('error').textContent=err.message;}
   });
   $('logout').addEventListener('click',async()=>{if(socket)socket.close();if(term){term.dispose();term=null;}$('screen').replaceChildren();await fetch(base+'logout',{method:'POST'});showLogin();});
+  $('displayMode').addEventListener('click',()=>{
+    stretch=!stretch;
+    $('displayMode').textContent=stretch?'Stretch: On':'Stretch: Off';
+    $('displayMode').setAttribute('aria-pressed',String(stretch));
+    applyStretch();
+  });
+  function applyStretch(){
+    if(!term || !term.element)return;
+    const surface=term.element;
+    surface.style.transform='none';
+    if(!stretch)return;
+    const area=$('screen');
+    const width=surface.offsetWidth;
+    const height=surface.offsetHeight;
+    if(width>0 && height>0){
+      const sx=Math.max(1,(area.clientWidth-30)/width);
+      const sy=Math.max(1,(area.clientHeight-30)/height);
+      surface.style.transform=`scale(${sx}, ${sy})`;
+    }
+  }
   function connect(){
     if(term){term.dispose();$('screen').replaceChildren();}
     term=new Terminal({cols:80,rows:43,fontFamily:'monospace',fontSize:16,theme:{background:'#252b2d',foreground:'#a9ead2',cursor:'#73e8c5'},cursorBlink:true,scrollback:1000});
@@ -62,6 +83,7 @@
       // Keep fixed TN3270 model 4 dimensions (80x43); scale font, not rows/cols.
       const font=Math.max(11,Math.min(30,Math.floor(Math.min(availableWidth/(80*0.62),availableHeight/(43*1.25)))));
       term.options.fontSize=font;
+      requestAnimationFrame(applyStretch);
     }
     fitTerminal();
     window.addEventListener('resize',fitTerminal,{passive:true});
