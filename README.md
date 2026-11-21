@@ -1,42 +1,59 @@
 # JamieJets web3270
 
-Minimal password-protected 3270 terminal at `https://jamiejets.com/mvs/`.
+Minimal 3270 terminal at `https://jamiejets.com/mvs/`, using the existing NGINX HTTPS certificate.
 
-- `index.html`: one-page login and terminal UI (xterm.js loaded from jsDelivr).
-- `server.py`: Python HTTP/WebSocket server, authentication, and a separate `c3270` process per browser session.
-- `/etc/web3270/config.json`: **private** settings stored outside the web root and repository.
+## Directory layout on Jester
 
-## Install on Ubuntu
+```text
+/home/jamie/www/jamiejets.com/
+├── public/mvs/index.html      # Public HTML/CSS login and terminal
+└── web3270/                   # Backend, outside the public webroot
+    ├── server.py
+    ├── requirements.txt
+    ├── .venv/
+    └── config.json            # Private, gitignored configuration
+```
 
-Requires Linux, `c3270`, Python 3.10+, and NGINX with an existing HTTPS server block.
+## 1. Install
 
 ```bash
 sudo apt update
-sudo apt install -y c3270 python3-venv
-sudo mkdir -p /opt/web3270 /etc/web3270
-sudo cp index.html server.py requirements.txt /opt/web3270/
-sudo cp config.example.json /etc/web3270/config.json
-cd /opt/web3270
+sudo apt install -y git python3-venv c3270
+```
+
+As the normal `jamie` user (provided they own the site files):
+
+```bash
+cd /home/jamie/www/jamiejets.com
+git clone https://github.com/JamieJanssen/web3270.git web3270
+mkdir -p public/mvs
+cp web3270/index.html public/mvs/index.html
+cd web3270
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+cp config.example.json config.json
+```
+
+If `web3270/` already exists, inspect it first. Use `git pull` if it is an existing Git clone; do not overwrite or delete existing files blindly.
+
+## 2. Password and secret
+
+```bash
+cd /home/jamie/www/jamiejets.com/web3270
 .venv/bin/python server.py hash-password
 .venv/bin/python server.py generate-secret
+nano config.json
 ```
 
-Put the generated hash into `password_hash` and the generated random hex into `session_secret` in `/etc/web3270/config.json` (do not put your plain password in the config). Protect the config:
+Paste the generated values into `password_hash` and `session_secret`. Never store the plain password. Confirm `html_path` is `/home/jamie/www/jamiejets.com/public/mvs/index.html` and `base_path` is `/mvs`.
 
 ```bash
-sudo chmod 600 /etc/web3270/config.json
+chmod 600 config.json
 ```
 
-Create a dedicated account and assign ownership to it:
+## 3. systemd
 
-```bash
-sudo useradd --system --home /opt/web3270 --shell /usr/sbin/nologin web3270
-sudo chown -R web3270:web3270 /opt/web3270 /etc/web3270
-```
-
-Create `/etc/systemd/system/web3270.service`:
+Create `/etc/systemd/system/web3270.service` with `sudo nano`:
 
 ```ini
 [Unit]
@@ -46,22 +63,31 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=web3270
-Group=web3270
-WorkingDirectory=/opt/web3270
-ExecStart=/opt/web3270/.venv/bin/python /opt/web3270/server.py
+User=jamie
+Group=jamie
+WorkingDirectory=/home/jamie/www/jamiejets.com/web3270
+Environment=WEB3270_CONFIG=/home/jamie/www/jamiejets.com/web3270/config.json
+ExecStart=/home/jamie/www/jamiejets.com/web3270/.venv/bin/python /home/jamie/www/jamiejets.com/web3270/server.py
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
 ProtectSystem=strict
-ProtectHome=true
+ProtectHome=read-only
 PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-In the existing `jamiejets.com` **HTTPS** NGINX server block add:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now web3270
+sudo systemctl status web3270
+```
+
+## 4. NGINX
+
+Inside the **existing HTTPS `server {}` block for `jamiejets.com`**, add:
 
 ```nginx
 location = /mvs { return 301 /mvs/; }
@@ -78,21 +104,27 @@ location /mvs/ {
 }
 ```
 
-Then validate and start:
+The trailing slash in `proxy_pass` is important: it maps `/mvs/ws` to backend `/ws`. The Python server serves the HTML located in your public webroot so it can attach appropriate security headers.
 
 ```bash
 sudo nginx -t
 sudo systemctl reload nginx
-sudo systemctl daemon-reload
-sudo systemctl enable --now web3270
-sudo systemctl status web3270
 ```
 
-Open `https://jamiejets.com/mvs/`. Each browser connection gets its own c3270 process connecting to `31.184.104.201:13270`. The backend only listens on `127.0.0.1` and does not need its own TLS certificate.
+Browse to `https://jamiejets.com/mvs/`.
 
-## Notes
+## Troubleshooting
 
-- The browser connection is HTTPS/WSS, but **the sample TN3270 connection to the remote MVS host is unencrypted**. Use a trusted network/VPN for that leg if credentials or private data are involved.
-- This is a personal-use first version, not a hardened multi-user service. Add a rate limiter in NGINX or Cloudflare and consider IP restrictions/Access before exposing it publicly.
-- Static libraries currently load from jsDelivr. For fully self-contained/offline operation, vendor xterm.js locally.
-- `config.example.json` is safe to commit; **never commit `/etc/web3270/config.json`**.
+```bash
+sudo journalctl -u web3270 -n 50 --no-pager
+curl -i http://127.0.0.1:3271/status
+```
+
+## Security notes
+
+- Python listens only on `127.0.0.1`, not a public port.
+- The login cookie is Secure, HttpOnly and SameSite=Strict.
+- The browser connection uses HTTPS/WSS, but the sample remote TN3270 connection to `31.184.104.201:13270` is **unencrypted**. Use a VPN or equivalent where credentials/private data are involved.
+- This is a personal-use first release, not a hardened multi-user gateway. Add NGINX/Cloudflare rate limiting or access policies before broad exposure.
+- The frontend loads xterm.js from jsDelivr; vendor it locally for offline operation.
+- Never put `config.json` inside `public/` or commit it to Git.
