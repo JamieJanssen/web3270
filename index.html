@@ -73,15 +73,15 @@
   }
   function connect(){
     if(term){term.dispose();$('screen').replaceChildren();}
-    term=new Terminal({cols:80,rows:43,fontFamily:'monospace',fontSize:16,theme:{background:'#252b2d',foreground:'#a9ead2',cursor:'#73e8c5'},cursorBlink:true,scrollback:1000});
+    term=new Terminal({cols:80,rows:24,fontFamily:'monospace',fontSize:16,theme:{background:'#252b2d',foreground:'#a9ead2',cursor:'#73e8c5'},cursorBlink:true,scrollback:1000});
     term.open($('screen'));term.focus();
     function fitTerminal(){
       if(!term)return;
       const screen=$('screen');
       const availableWidth=screen.clientWidth-36;
       const availableHeight=screen.clientHeight-36;
-      // Keep fixed TN3270 model 4 dimensions (80x43); scale font, not rows/cols.
-      const font=Math.max(11,Math.min(30,Math.floor(Math.min(availableWidth/(80*0.62),availableHeight/(43*1.25)))));
+      // Keep fixed TN3270 model 2 dimensions (80x24); scale font, not rows/cols.
+      const font=Math.max(11,Math.min(30,Math.floor(Math.min(availableWidth/(80*0.62),availableHeight/(24*1.25)))));
       term.options.fontSize=font;
       requestAnimationFrame(applyStretch);
     }
