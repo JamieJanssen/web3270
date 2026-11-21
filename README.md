@@ -4,6 +4,10 @@ Minimal 3270 terminal at `https://jamiejets.com/mvs/`, using the existing NGINX 
 
 The terminal uses IBM 3270 Model 2 (80 columns × 24 rows). The frontend has a Normal/Stretch display toggle; stretching changes only the visual size, not the terminal geometry.
 
+## Persistent session
+
+There is one shared MVS connection for all authenticated browsers. Closing the tab, refreshing the page, or logging out of the website does not immediately disconnect MVS. The next authenticated browser takes over the same terminal and replays its recent ANSI output. After **60 minutes with no browser attached**, c3270 is terminated. Set `session_timeout_minutes` in `config.json` to change that limit (default: 60). `Disconnect` explicitly terminates the MVS session; reloading then starts a fresh one. Restarting Python/Jester also ends the session. For sessions with more than 1 MiB of accumulated terminal output, screen replay is best-effort; the live MVS connection remains active.
+
 ## Directory layout on Jester
 
 ```text
