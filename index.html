@@ -41,6 +41,7 @@
     .sessions-overlay{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:20px;background:#000a}.sessions-dialog{width:min(410px,100%);padding:22px;border:1px solid #39576c;border-radius:12px;background:#122232;color:#d8e9ed;box-shadow:0 22px 80px #000c}.sessions-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.sessions-heading h2{margin:0;font-size:19px}.sessions-heading button{background:#243d4e;color:#e2edef;padding:5px 11px;font-size:19px}.sessions-list{display:grid;gap:8px;max-height:55dvh;overflow:auto}.sessions-entry{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 12px;background:#1c3040;border-radius:7px;font-size:14px}.sessions-state{display:flex;align-items:center;gap:8px;color:#aabdc8;font-size:12px}.sessions-state i{width:10px;height:10px;border-radius:50%;background:#f2b960}.sessions-state.connected i{background:#6ad5bd}.sessions-empty{margin:0;color:#aabdc8;font-size:14px}
     .sessions-name{display:flex;align-items:center;gap:7px}.sessions-you{color:#6ad5bd;font-size:11px;font-weight:700}
     button.sessions-entry{width:100%;border:1px solid transparent;color:#d8e9ed;text-align:left;cursor:pointer}button.sessions-entry:hover,button.sessions-entry:focus-visible{background:#29475b;border-color:#6ad5bd}button.sessions-entry:disabled{cursor:wait;opacity:.7}
+    .shutdown-overlay{position:fixed;inset:0;z-index:2200;display:grid;place-items:center;padding:12px;background:#0008}.shutdown-dialog{width:min(415px,100%);background:#d4d0c8;color:#000;border:2px solid;border-color:#fff #333 #333 #fff;box-shadow:2px 3px 0 #0007;font:11px Tahoma,Arial,sans-serif;color-scheme:light}.shutdown-dialog .win-title{justify-content:space-between}.shutdown-dialog .win-title button{width:15px;height:15px;padding:0;border:1px solid;border-color:#fff #444 #444 #fff;background:#d4d0c8;border-radius:0;color:#000;line-height:11px;font-size:12px}.shutdown-dialog .win-banner{height:69px}.shutdown-dialog .win-wordmark .win-word{font-size:26px}.shutdown-dialog .win-wordmark .win-year{font-size:20px}.shutdown-dialog .win-wordmark .win-edition{font-size:15px}.shutdown-dialog .win-body{padding:12px 14px 10px}.shutdown-row{display:grid;grid-template-columns:37px minmax(0,1fr);gap:12px;align-items:start}.shutdown-computer{font-size:30px;line-height:1;padding-top:5px}.shutdown-label{display:block;margin:0 0 7px;font:11px Tahoma,Arial,sans-serif}.shutdown-dialog select{display:block;width:100%;height:23px;border:2px solid;border-color:#777 #fff #fff #777;border-radius:0;background:#204a94;color:#fff;padding:1px 3px;font:12px Tahoma,Arial,sans-serif}.shutdown-description{margin:9px 0 0;color:#222;font:11px/1.3 Tahoma,Arial,sans-serif}.shutdown-dialog .win-actions{margin-top:16px}
     .toolbar .zoom-controls button:disabled{opacity:.35;cursor:default}
     .xterm{flex:none;transform-origin:center center}.xterm .xterm-viewport{scrollbar-width:none!important}.xterm .xterm-viewport::-webkit-scrollbar{display:none} [hidden]{display:none!important}
     #terminalView:fullscreen{grid-template-rows:minmax(0,1fr) auto;background:#0a1018;padding:8px 12px 3px;width:100%;height:100%;overflow:hidden}
@@ -67,13 +68,14 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.28</small></div>
+    </form><small class="login-version">v1.29</small></div>
   </section>
   <section id="terminalView" hidden>
 <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite" title="Stretch to fill screen">Stretch</output><button id="zoomIn" type="button" disabled aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
     <div class="pf-bar" id="pfBar" role="group" aria-label="3270 function keys"><div class="pf-popover" id="pfPopover" role="group" aria-label="All 3270 PF keys" hidden></div></div>
     <div id="screen"></div>
     <div id="sessionsOverlay" class="sessions-overlay" hidden><section class="sessions-dialog" role="dialog" aria-modal="true" aria-labelledby="sessionsTitle"><div class="sessions-heading"><h2 id="sessionsTitle">MVS Sessions</h2><button id="sessionsClose" type="button" aria-label="Close sessions">×</button></div><div id="sessionsList" class="sessions-list" aria-live="polite"></div></section></div>
+    <div id="shutdownOverlay" class="shutdown-overlay" hidden><section class="shutdown-dialog" role="dialog" aria-modal="true" aria-labelledby="shutdownTitle"><div class="win-title"><span id="shutdownTitle">Shut Down Windows</span><button id="shutdownClose" type="button" aria-label="Cancel logout">×</button></div><div class="win-banner"><span class="win-logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="win-wordmark"><div><span class="win-word">Windows</span> <span class="win-year">2000</span></div><div class="win-edition">Advanced Server</div></div></div><form id="shutdownForm" class="win-body"><div class="shutdown-row"><span class="shutdown-computer" aria-hidden="true">🖥️</span><div><label class="shutdown-label" for="shutdownAction">What do you want the computer to do?</label><select id="shutdownAction"><option value="end">End session</option></select><p class="shutdown-description">Ends your MVS terminal session and disconnects from the mainframe.</p></div></div><div class="win-actions"><button id="shutdownConfirm" type="submit">OK</button><button id="shutdownCancel" type="button">Cancel</button><button type="button" disabled>Help</button></div></form></section></div>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
@@ -358,7 +360,20 @@
       $('error').textContent=err.message;
     }
   });
-  $('logout').addEventListener('click',async()=>{
+  const shutdownOverlay=$('shutdownOverlay');
+  function closeShutdown(){shutdownOverlay.hidden=true;if(term)term.focus();}
+  $('logout').addEventListener('click',()=>{
+    shutdownOverlay.hidden=false;
+    $('shutdownAction').value='end';
+    $('shutdownAction').focus();
+  });
+  $('shutdownClose').addEventListener('click',closeShutdown);
+  $('shutdownCancel').addEventListener('click',closeShutdown);
+  shutdownOverlay.addEventListener('click',event=>{if(event.target===shutdownOverlay)closeShutdown();});
+  $('shutdownForm').addEventListener('submit',async event=>{
+    event.preventDefault();
+    if($('shutdownConfirm').disabled)return;
+    $('shutdownConfirm').disabled=true;
     manuallyDisconnected=true;
     if(reconnectTimer)clearTimeout(reconnectTimer);
     await exitTerminalFullscreen();
@@ -369,7 +384,12 @@
     // Explicit logout releases the c3270 process and its Hercules device.
     // Closing a tab still retains the session for the configured timeout.
     try{await fetch(base+'disconnect',{method:'POST'});}
-    finally{await fetch(base+'logout',{method:'POST'});showLogin();}
+    finally{
+      await fetch(base+'logout',{method:'POST'});
+      shutdownOverlay.hidden=true;
+      $('shutdownConfirm').disabled=false;
+      showLogin();
+    }
   });
   $('fullscreen').addEventListener('click',async()=>{
     try{
@@ -388,6 +408,7 @@
   });
   document.addEventListener('fullscreenchange',syncFullscreen);
   document.addEventListener('keydown',event=>{
+    if(event.key==='Escape' && !shutdownOverlay.hidden){closeShutdown();event.preventDefault();event.stopImmediatePropagation();return;}
     if(event.key==='Escape' && !sessionsOverlay.hidden){closeSessions();event.stopImmediatePropagation();return;}
     if(event.key==='Escape' && $('terminalView').classList.contains('pseudo-fullscreen')){
       exitTerminalFullscreen();
