@@ -65,7 +65,7 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.18</small></div>
+    </form><small class="login-version">v1.19</small></div>
   </section>
   <section id="terminalView" hidden>
 <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
@@ -106,20 +106,23 @@
       }
       for(const session of sessions){
         const mine=session.username===current;
-        const switchable=can_switch && !mine;
-        const row=document.createElement(switchable?'button':'div');row.className='sessions-entry';
-        if(switchable){
+        const clickable=mine||can_switch;
+        const row=document.createElement(clickable?'button':'div');row.className='sessions-entry';
+        if(clickable){
           row.type='button';
-          row.title='Switch to '+session.username;
-          row.setAttribute('aria-label','Switch to session '+session.username);
+          row.title=mine?'Reconnect '+session.username:'Switch to '+session.username;
+          row.setAttribute('aria-label',mine?'Reconnect session '+session.username:'Switch to session '+session.username);
           row.addEventListener('click',async()=>{
             row.disabled=true;
             try{
-              const result=await fetch(base+'switch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:session.username})});
-              if(!result.ok)throw Error(result.status===404?'Session no longer exists':'Could not switch session');
+              if(!mine){
+                const result=await fetch(base+'switch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:session.username})});
+                if(!result.ok)throw Error(result.status===404?'Session no longer exists':'Could not switch session');
+              }
               closeSessions();
               currentUsername=session.username;
               manuallyDisconnected=false;
+              if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
               connect();
             }catch(error){row.disabled=false;alert(error.message);}
           });
