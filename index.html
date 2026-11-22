@@ -26,6 +26,7 @@
     .win-logo i:nth-child(1){background:#ec3425}.win-logo i:nth-child(2){background:#58a431}.win-logo i:nth-child(3){background:#2876bf}.win-logo i:nth-child(4){background:#f6c330}
     .win-wordmark{font-family:Arial,sans-serif;line-height:.93;letter-spacing:-1.5px}.win-wordmark .win-word{font-size:30px;font-weight:900}.win-wordmark .win-year{font-size:24px;font-weight:400}.win-wordmark .win-edition{font-size:18px;font-weight:900;letter-spacing:-.8px}.win-wordmark .win-subtitle{font-size:11px;letter-spacing:0;text-align:center;margin-top:3px}
     .win-body{padding:16px 11px 10px}.win-row{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:6px;margin:4px 0 8px}.win-row label{margin:0;font-size:11px}.win-row input{height:22px;border:2px solid;border-color:#808080 #fff #fff #808080;border-radius:0;background:#fff;color:#000;padding:1px 5px;font:12px Tahoma,Arial,sans-serif;outline:none}.win-row input:focus{outline:1px dotted #222;outline-offset:-4px}
+    .win-check{display:flex;align-items:center;gap:6px;margin:0 0 0 78px;font:11px Tahoma,Arial,sans-serif;cursor:pointer}.win-check input{appearance:auto;width:13px;height:13px;margin:0;padding:0;border:0;border-radius:0;accent-color:#0a246a}.win-check span{line-height:16px}
     .win-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:15px}.win-actions button{min-width:73px;height:24px;padding:2px 8px;border:2px solid;border-color:#fff #555 #555 #fff;border-radius:0;background:#d4d0c8;color:#000;font:11px Tahoma,Arial,sans-serif;box-shadow:1px 1px 0 #222}.win-actions button:active{border-color:#555 #fff #fff #555;box-shadow:none}.win-actions button:disabled{color:#777;text-shadow:1px 1px #fff;cursor:default}.win-actions button:focus-visible{outline:1px dotted #000;outline-offset:-5px}
     #loginView #error{color:#a00000;min-height:0;margin:2px 0 0 78px;font-size:11px;line-height:1.2}#loginView #error:empty{display:none}
     h1{font-size:24px;margin:0 0 8px}p{color:#91a6b8;line-height:1.5}label{display:block;font-size:13px;margin:28px 0 9px}
@@ -57,9 +58,10 @@
     <div class="win-body"><form id="loginForm">
       <div class="win-row"><label for="username">User name:</label><input id="username" name="username" autocomplete="username" value="Admin" required></div>
       <div class="win-row"><label for="password">Password:</label><input id="password" type="password" autocomplete="current-password" required autofocus></div>
+      <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.08</small></div>
+    </form><small class="login-version">v1.09</small></div>
   </section>
   <section id="terminalView" hidden>
     <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span></div>
@@ -180,6 +182,13 @@
     loginView.hidden=true;
     loginView.remove();
     $('terminalView').hidden=false;
+    if(sessionStorage.getItem('web3270-login-fullscreen')==='1'){
+      sessionStorage.removeItem('web3270-login-fullscreen');
+      // Browser fullscreen needs a direct user gesture; the fixed layout also
+      // works after the login reload and keeps the iPad keyboard usable.
+      $('terminalView').classList.add('pseudo-fullscreen');
+      syncFullscreen();
+    }
     manuallyDisconnected=false;
     connect();
   }
@@ -188,6 +197,8 @@
     e.preventDefault();$('error').textContent='';
     try{const r=await fetch(base+'login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('password').value})});
       if(!r.ok)throw Error('Incorrect password or login unavailable');
+      if($('loginFullscreen').checked)sessionStorage.setItem('web3270-login-fullscreen','1');
+      else sessionStorage.removeItem('web3270-login-fullscreen');
       // A full navigation also clears password-manager UI injected by extensions.
       // The authentication cookie survives; check() opens the terminal on reload.
       passwordField.blur();
