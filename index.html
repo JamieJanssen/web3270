@@ -66,7 +66,7 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.22</small></div>
+    </form><small class="login-version">v1.23</small></div>
   </section>
   <section id="terminalView" hidden>
 <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite" title="Stretch to fill screen">Stretch</output><button id="zoomIn" type="button" disabled aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
@@ -344,6 +344,27 @@
     }
   });
   $('screen').addEventListener('touchend',()=>{if(term)term.focus();},{passive:true});
+  // xterm.js measures cell sizes before CSS transforms, but its mouse hit-test
+  // uses screen coordinates after scaling. Undo the scale in the capture phase
+  // so c3270 receives the correct 80x24 cursor position in every zoom mode.
+  function correctTerminalMouse(event){
+    if(!term || !term.element || !term.element.contains(event.target))return;
+    const surface=term.element;
+    const rect=surface.getBoundingClientRect();
+    const scaleX=rect.width/surface.offsetWidth;
+    const scaleY=rect.height/surface.offsetHeight;
+    if(!Number.isFinite(scaleX)||!Number.isFinite(scaleY)||scaleX<=0||scaleY<=0)return;
+    if(Math.abs(scaleX-1)<0.001 && Math.abs(scaleY-1)<0.001)return;
+    const correctedX=rect.left+(event.clientX-rect.left)/scaleX;
+    const correctedY=rect.top+(event.clientY-rect.top)/scaleY;
+    Object.defineProperties(event,{
+      clientX:{configurable:true,value:correctedX},
+      clientY:{configurable:true,value:correctedY}
+    });
+  }
+  for(const type of ['mousedown','mouseup','mousemove']){
+    $('screen').addEventListener(type,correctTerminalMouse,true);
+  }
   function changeZoom(delta){
     if(delta<0 && zoom===100 && !proportionalZoom){
       proportionalZoom=true;
