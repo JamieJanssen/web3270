@@ -218,8 +218,9 @@
     const width=surface.offsetWidth;
     const height=surface.offsetHeight;
     if(width>0 && height>0){
-      const sx=Math.max(1,(area.clientWidth-30)/width);
-      const sy=Math.max(1,(area.clientHeight-30)/height);
+      // Leave just 6px on each side when zoom is at 100%.
+      const sx=Math.max(1,(area.clientWidth-12)/width);
+      const sy=Math.max(1,(area.clientHeight-12)/height);
       surface.style.transform=`scale(${sx*zoom/100}, ${sy*zoom/100})`;
     }
   }
