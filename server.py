@@ -100,6 +100,17 @@ async def status(request):
     return web.json_response({"authenticated": authenticated(request)}, headers={"Cache-Control": "no-store"})
 
 
+async def sessions(request):
+    if not authenticated(request):
+        raise web.HTTPForbidden()
+    async with request.app["terminal_lock"]:
+        items = [
+            {"username": name, "connected": terminal.client is not None and not terminal.client.closed}
+            for name, terminal in sorted(request.app["terminal_sessions"].items())
+        ]
+    return web.json_response({"sessions": items}, headers={"Cache-Control": "no-store"})
+
+
 async def login(request):
     if not same_origin(request):
         raise web.HTTPForbidden()
@@ -329,6 +340,7 @@ def main():
     app.on_shutdown.append(shutdown)
     app.router.add_get("/", index)
     app.router.add_get("/status", status)
+    app.router.add_get("/sessions", sessions)
     app.router.add_post("/login", login)
     app.router.add_post("/logout", logout)
     app.router.add_post("/disconnect", disconnect)
