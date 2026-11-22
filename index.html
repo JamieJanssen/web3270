@@ -65,7 +65,7 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.20</small></div>
+    </form><small class="login-version">v1.21</small></div>
   </section>
   <section id="terminalView" hidden>
 <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
@@ -147,6 +147,7 @@
   let resizeTerminal=()=>{};
   const isIPad=/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
   let zoom = 100;
+  let proportionalZoom = false;
   const functionKeys={
     '1':'\x1bOP','2':'\x1bOQ','3':'\x1bOR','4':'\x1bOS',
     '5':'\x1b[15~','6':'\x1b[17~','7':'\x1b[18~','8':'\x1b[19~',
@@ -343,8 +344,15 @@
   });
   $('screen').addEventListener('touchend',()=>{if(term)term.focus();},{passive:true});
   function changeZoom(delta){
-    zoom=Math.max(50,Math.min(150,zoom+delta));
-    $('zoomValue').textContent=zoom+'%';
+    if(delta<0 && zoom===100 && !proportionalZoom){
+      proportionalZoom=true;
+    }else if(delta>0 && zoom===100 && proportionalZoom){
+      proportionalZoom=false;
+    }else{
+      zoom=Math.max(50,Math.min(150,zoom+delta));
+    }
+    $('zoomValue').textContent=proportionalZoom && zoom===100?'Fit':zoom+'%';
+    $('zoomValue').title=proportionalZoom?'Proportional scaling':'Stretch to fill screen';
     $('zoomOut').disabled=zoom===50;
     $('zoomIn').disabled=zoom===150;
     applyStretch();
@@ -400,7 +408,14 @@
       // Leave just 6px on each side when zoom is at 100%.
       const sx=Math.max(1,(area.clientWidth-12)/width);
       const sy=Math.max(1,(area.clientHeight-12)/height);
-      surface.style.transform=`scale(${sx*zoom/100}, ${sy*zoom/100})`;
+      // The first minus click restores the original character proportions.
+      // Fill the available width unless the screen height is the limiting factor.
+      if(proportionalZoom){
+        const fit=Math.min(sx,sy)*zoom/100;
+        surface.style.transform=`scale(${fit})`;
+      }else{
+        surface.style.transform=`scale(${sx*zoom/100}, ${sy*zoom/100})`;
+      }
     }
   }
   function connect(){
