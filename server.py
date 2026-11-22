@@ -97,7 +97,8 @@ async def index(request):
 
 
 async def status(request):
-    return web.json_response({"authenticated": authenticated(request)}, headers={"Cache-Control": "no-store"})
+    username = session_username(request)
+    return web.json_response({"authenticated": username is not None, "username": username}, headers={"Cache-Control": "no-store"})
 
 
 async def sessions(request):
@@ -108,7 +109,7 @@ async def sessions(request):
             {"username": name, "connected": terminal.client is not None and not terminal.client.closed}
             for name, terminal in sorted(request.app["terminal_sessions"].items())
         ]
-    return web.json_response({"sessions": items}, headers={"Cache-Control": "no-store"})
+    return web.json_response({"sessions": items, "current": session_username(request)}, headers={"Cache-Control": "no-store"})
 
 
 async def login(request):
@@ -127,7 +128,7 @@ async def login(request):
     if not verify_password(password, request.app["config"]["password_hash"]):
         await asyncio.sleep(0.5)
         raise web.HTTPUnauthorized(text="Incorrect password")
-    response = web.json_response({"ok": True})
+    response = web.json_response({"ok": True, "username": username.upper()})
     response.set_cookie(COOKIE, sign_session(request.app["config"], username.upper()), secure=True,
                         httponly=True, samesite="Strict", path=request.app["config"]["base_path"] + "/",
                         max_age=SESSION_SECONDS)
