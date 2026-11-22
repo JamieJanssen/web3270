@@ -5,7 +5,7 @@
   "listen_port": 3271,
   "base_path": "/mvs",
   "html_path": "/home/jamie/www/jamiejets.com/public/mvs/index.html",
-  "session_timeout_minutes": 60,
+  "session_timeout_minutes": 240,
   "password_hash": "REPLACE_WITH_HASH_FROM_SETUP_COMMAND",
   "session_secret": "REPLACE_WITH_RANDOM_SECRET_FROM_SETUP_COMMAND"
 }
