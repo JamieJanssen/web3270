@@ -8,6 +8,7 @@ import hmac
 import json
 import os
 import pty
+import re
 import secrets
 import struct
 import sys
@@ -24,6 +25,7 @@ CONFIG_PATH = Path(os.environ.get("WEB3270_CONFIG", "/etc/web3270/config.json"))
 COOKIE = "web3270_session"
 SESSION_SECONDS = 8 * 60 * 60
 REPLAY_LIMIT = 1024 * 1024
+MAX_TERMINALS = 8
 
 
 def password_hash(password):
@@ -43,22 +45,30 @@ def verify_password(password, encoded):
         return False
 
 
-def sign_session(config):
+def sign_session(config, username):
     expiry = str(int(time.time()) + SESSION_SECONDS)
-    signature = hmac.new(bytes.fromhex(config["session_secret"]), expiry.encode(), hashlib.sha256).hexdigest()
-    return expiry + "." + signature
+    message = f"{expiry}.{username}"
+    signature = hmac.new(bytes.fromhex(config["session_secret"]), message.encode(), hashlib.sha256).hexdigest()
+    return message + "." + signature
+
+
+def session_username(request):
+    token = request.cookies.get(COOKIE, "")
+    try:
+        expiry, username, signature = token.split(".", 2)
+        if int(expiry) < time.time() or int(expiry) > time.time() + SESSION_SECONDS:
+            return None
+        if not re.fullmatch(r"[A-Z0-9_-]{1,16}", username):
+            return None
+        expected = hmac.new(bytes.fromhex(request.app["config"]["session_secret"]),
+                            f"{expiry}.{username}".encode(), hashlib.sha256).hexdigest()
+        return username if hmac.compare_digest(signature, expected) else None
+    except (ValueError, KeyError):
+        return None
 
 
 def authenticated(request):
-    token = request.cookies.get(COOKIE, "")
-    try:
-        expiry, signature = token.split(".", 1)
-        if int(expiry) < time.time() or int(expiry) > time.time() + SESSION_SECONDS:
-            return False
-        expected = hmac.new(bytes.fromhex(request.app["config"]["session_secret"]), expiry.encode(), hashlib.sha256).hexdigest()
-        return hmac.compare_digest(signature, expected)
-    except (ValueError, KeyError):
-        return False
+    return session_username(request) is not None
 
 
 def same_origin(request):
@@ -96,7 +106,10 @@ async def login(request):
     try:
         payload = await request.json()
         password = payload["password"]
+        username = payload.get("username", "Admin")
         if not isinstance(password, str) or len(password) > 1024:
+            raise ValueError()
+        if not isinstance(username, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,16}", username):
             raise ValueError()
     except (ValueError, KeyError, TypeError):
         raise web.HTTPBadRequest()
@@ -104,7 +117,7 @@ async def login(request):
         await asyncio.sleep(0.5)
         raise web.HTTPUnauthorized(text="Incorrect password")
     response = web.json_response({"ok": True})
-    response.set_cookie(COOKIE, sign_session(request.app["config"]), secure=True,
+    response.set_cookie(COOKIE, sign_session(request.app["config"], username.upper()), secure=True,
                         httponly=True, samesite="Strict", path=request.app["config"]["base_path"] + "/",
                         max_age=SESSION_SECONDS)
     return response
@@ -119,10 +132,11 @@ async def logout(request):
 
 
 class PersistentTerminal:
-    """One c3270 process shared by successive authenticated browsers."""
+    """One persistent c3270 process for a particular website username."""
 
-    def __init__(self, app):
+    def __init__(self, app, username):
         self.app = app
+        self.username = username
         self.client = None
         self.process = None
         self.master = None
@@ -184,16 +198,16 @@ class PersistentTerminal:
 
     async def expire(self):
         async with self.app["terminal_lock"]:
-            if self.client is None and self.app["terminal_session"] is self:
+            if self.client is None and self.app["terminal_sessions"].get(self.username) is self:
                 await self.stop()
-                self.app["terminal_session"] = None
+                del self.app["terminal_sessions"][self.username]
 
     async def attach(self, client):
         if self.timer:
             self.timer.cancel()
             self.timer = None
         previous = self.client
-        # A new browser takes over the single terminal. No second MVS login.
+        # A browser reconnecting as the same user takes over that user's terminal.
         self.client = client
         if previous and previous is not client and not previous.closed:
             await previous.close(code=4001, message=b"Session opened elsewhere")
@@ -229,18 +243,19 @@ class PersistentTerminal:
 
 
 async def disconnect(request):
-    if not authenticated(request) or not same_origin(request):
+    username = session_username(request)
+    if username is None or not same_origin(request):
         raise web.HTTPForbidden()
     async with request.app["terminal_lock"]:
-        session = request.app["terminal_session"]
+        session = request.app["terminal_sessions"].pop(username, None)
         if session:
             await session.stop()
-            request.app["terminal_session"] = None
     return web.json_response({"ok": True})
 
 
 async def terminal(request):
-    if not authenticated(request) or not same_origin(request):
+    username = session_username(request)
+    if username is None or not same_origin(request):
         raise web.HTTPForbidden()
     ws = web.WebSocketResponse(heartbeat=30, max_msg_size=16384)
     await ws.prepare(request)
@@ -248,13 +263,16 @@ async def terminal(request):
     session = None
     try:
         async with app["terminal_lock"]:
-            session = app["terminal_session"]
+            session = app["terminal_sessions"].get(username)
             if session is None or session.process is None or session.process.returncode is not None:
                 if session is not None:
                     await session.stop()
-                session = PersistentTerminal(app)
+                elif len(app["terminal_sessions"]) >= MAX_TERMINALS:
+                    await ws.close(code=1013, message=b"Too many terminal sessions")
+                    return ws
+                session = PersistentTerminal(app, username)
                 await session.start()
-                app["terminal_session"] = session
+                app["terminal_sessions"][username] = session
             await session.attach(ws)
         loop = asyncio.get_running_loop()
         async for message in ws:
@@ -280,9 +298,9 @@ async def terminal(request):
 
 
 async def shutdown(app):
-    session = app["terminal_session"]
-    if session:
+    for session in list(app["terminal_sessions"].values()):
         await session.stop()
+    app["terminal_sessions"].clear()
 
 
 def main():
@@ -307,7 +325,7 @@ def main():
     app = web.Application(client_max_size=2048)
     app["config"] = cfg
     app["terminal_lock"] = asyncio.Lock()
-    app["terminal_session"] = None
+    app["terminal_sessions"] = {}
     app.on_shutdown.append(shutdown)
     app.router.add_get("/", index)
     app.router.add_get("/status", status)
