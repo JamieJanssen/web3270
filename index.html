@@ -17,17 +17,17 @@
     input:focus{outline:2px solid #6ad5bd}button{border:0;border-radius:7px;background:#6ad5bd;color:#071a1c;font-weight:700;padding:12px 19px;cursor:pointer}
     button:hover{background:#9df0db}button.secondary{background:#243d4e;color:#e2edef}#error{color:#ff9e9e;min-height:1.5em}
     #terminalView{width:100%;align-self:stretch}#screen{display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:hidden;box-shadow:0 20px 70px #0008;height:max(320px,calc(100dvh - 255px))}
-    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}.toolbar-actions{display:flex;gap:8px;align-items:center}.dot{display:inline-block;background:#eeae59;width:8px;height:8px;border-radius:50%;margin-right:7px}
-    .pf-bar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px;justify-content:center}.pf-bar::-webkit-scrollbar{display:none}.pf-bar button{flex:0 0 auto;min-width:50px;padding:10px 12px;background:#243d4e;color:#e2edef}.pf-bar button:active{background:#6ad5bd;color:#071a1c}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}.toolbar-actions{display:flex;gap:8px;align-items:center}.dot{display:inline-block;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14}
+    .pf-bar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px;justify-content:flex-start;min-width:0}.pf-bar::-webkit-scrollbar{display:none}.pf-bar button{flex:0 0 auto;min-width:50px;padding:10px 12px;background:#243d4e;color:#e2edef}.pf-bar button.pf-special{min-width:68px;font-weight:800}.pf-bar button:active{background:#6ad5bd;color:#071a1c}
     .xterm{flex:none;transform-origin:center center}.xterm .xterm-viewport{scrollbar-width:none!important}.xterm .xterm-viewport::-webkit-scrollbar{display:none} [hidden]{display:none!important}
     #terminalView:fullscreen{display:flex;flex-direction:column;background:#0a1018;padding:12px;width:100%;height:100%;overflow:hidden}
     #terminalView:fullscreen #screen{flex:1;height:auto;min-height:0}
     #terminalView:fullscreen .toolbar{flex:none}
     #terminalView:fullscreen > p{display:none}
-    #terminalView.pseudo-fullscreen{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;background:#0a1018;padding:12px;width:100%;height:100dvh;overflow:hidden}
-    #terminalView.pseudo-fullscreen .pf-bar{flex:none;order:0}
-    #terminalView.pseudo-fullscreen #screen{flex:1;height:auto;min-height:0;order:1}
-    #terminalView.pseudo-fullscreen .toolbar{flex:none;order:2;margin:10px 4px 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+    #terminalView.pseudo-fullscreen{position:fixed;inset:0;z-index:1000;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;column-gap:12px;background:#0a1018;padding:12px;width:100%;height:100dvh;overflow:hidden}
+    #terminalView.pseudo-fullscreen .pf-bar{grid-column:1;grid-row:2;align-self:center;padding:8px 0 max(2px,env(safe-area-inset-bottom,0px))}
+    #terminalView.pseudo-fullscreen #screen{grid-column:1/-1;grid-row:1;height:auto;min-height:0}
+    #terminalView.pseudo-fullscreen .toolbar{grid-column:2;grid-row:2;justify-content:flex-end;align-self:center;margin:0;padding-bottom:env(safe-area-inset-bottom,0px)}
     #terminalView.pseudo-fullscreen > p{display:none}
     @media(max-width:700px){header{padding:0 16px}main{padding:12px}.card{padding:24px}#screen{padding:8px}.pf-bar{justify-content:flex-start}}
   </style>
@@ -40,7 +40,7 @@
     <form id="loginForm"><label for="password">Access password</label><input id="password" type="password" autocomplete="current-password" required autofocus><p id="error" role="alert"></p><button type="submit">Connect to MVS</button></form>
   </section>
   <section id="terminalView" hidden>
-    <div class="toolbar"><div><span class="dot" id="dot"></span><span id="connection">Connecting…</span></div><div class="toolbar-actions"><button class="secondary" id="displayMode" type="button" aria-pressed="true" title="Toggle stretched terminal display">Stretch: On</button><button class="secondary" id="fullscreen" type="button" title="Toggle fullscreen (Esc to exit)">Fullscreen</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary" id="logout">Log out</button></div></div>
+    <div class="toolbar"><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span><div class="toolbar-actions"><button class="secondary" id="displayMode" type="button" aria-pressed="true" title="Toggle stretched terminal display">Stretch: On</button><button class="secondary" id="fullscreen" type="button" title="Toggle fullscreen (Esc to exit)">Fullscreen</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary" id="logout">Log out</button></div></div>
     <div class="pf-bar" id="pfBar" role="group" aria-label="3270 function keys"></div>
     <div id="screen"></div><p>3270 keyboard: Tab, Enter, F1–F12 · iPad: Cmd+1…9 = PF1…9, Cmd+0 = PF10, Cmd+- = PF11, Cmd+= = PF12 · Paste: Ctrl+V</p>
   </section>
@@ -69,6 +69,7 @@
     const button=document.createElement('button');
     button.type='button';
     button.textContent='PF'+n;
+    if([3,7,8].includes(n))button.classList.add('pf-special');
     button.setAttribute('aria-label','Program Function '+n);
     button.addEventListener('click',()=>{
       const key=n===10?'0':n===11?'-':n===12?'=':String(n);
@@ -194,9 +195,10 @@
     screenObserver.observe($('screen'));
     const proto=location.protocol==='https:'?'wss:':'ws:';
     socket=new WebSocket(proto+'//'+location.host+base+'ws');
-    socket.onopen=()=>{ $('connection').textContent='Connected';$('dot').style.background='#6ad5bd'; };
-    socket.onclose=()=>{ $('connection').textContent='Disconnected';$('dot').style.background='#f38b86'; };
-    socket.onerror=()=>{$('connection').textContent='Connection error';};
+    const currentSocket=socket;
+    socket.onopen=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#6ad5bd';$('dot').setAttribute('aria-label','Connected');$('dot').title='Connected'; };
+    socket.onclose=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Disconnected');$('dot').title='Disconnected'; };
+    socket.onerror=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Connection error');$('dot').title='Connection error'; };
     socket.onmessage=e=>{const binary=atob(e.data);const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));term.write(bytes);};
     term.onData(sendTerminalInput);
   }
