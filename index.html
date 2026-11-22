@@ -8,15 +8,12 @@
   <style>
     :root {color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
     *{box-sizing:border-box}body{margin:0;background:#0a1018;color:#d8e9ed;min-height:100vh}
-    header{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #263849;background:#0e1925}
-    .brand{font-weight:700;letter-spacing:.12em}.brand span{color:#6ad5bd}small{color:#91a6b8}
-    main{display:grid;place-items:center;min-height:calc(100vh - 44px);padding:8px 12px}
+    small{color:#91a6b8}
+    main{display:grid;place-items:center;min-height:100dvh;padding:8px 12px}
     .card{width:min(100%,390px);padding:32px;border:1px solid #294154;border-radius:14px;background:#122232;box-shadow:0 22px 70px #0006}
     .login-version{display:block;text-align:right;font-size:10px;color:#555;opacity:.8}
     body:has(#loginView:not([hidden])){background:#3b71a7;color:#000;font-family:Tahoma,'MS Sans Serif',Arial,sans-serif;color-scheme:light}
-    body:has(#loginView:not([hidden])) header{display:none}
     body:has(#loginView:not([hidden])) main{min-height:100dvh}
-    body:has(#terminalView:not([hidden])) header{display:none}
     body:has(#terminalView:not([hidden])) main{min-height:100dvh;padding:6px 12px}
     body:has(#terminalView:not([hidden])) #terminalView:not(:fullscreen):not(.pseudo-fullscreen){height:calc(100dvh - 12px)}
     #loginView.win2000{width:min(415px,calc(100vw - 24px));padding:0;border:2px solid;border-color:#fff #333 #333 #fff;border-radius:0;background:#d4d0c8;box-shadow:1px 1px 0 #777;font-size:11px;color:#000}
@@ -53,11 +50,10 @@
     #terminalView:fullscreen .pf-popover,#terminalView.pseudo-fullscreen .pf-popover{top:auto;bottom:calc(100% + 6px)}
     #terminalView:fullscreen .toolbar,#terminalView.pseudo-fullscreen .toolbar{grid-column:2;grid-row:2;align-self:stretch;height:50px;margin:0;padding:2px 18px 6px 0}
     #terminalView.pseudo-fullscreen > p{display:none}
-    @media(max-width:700px){header{padding:0 16px}main{padding:8px}.card{padding:24px}#screen{padding:8px}.pf-bar{justify-content:flex-start}#loginView.win2000{padding:0}.win-wordmark .win-word{font-size:27px}.win-wordmark .win-year{font-size:21px}}
+    @media(max-width:700px){main{padding:8px}.card{padding:24px}#screen{padding:8px}.pf-bar{justify-content:flex-start}#loginView.win2000{padding:0}.win-wordmark .win-word{font-size:27px}.win-wordmark .win-year{font-size:21px}}
   </style>
 </head>
 <body>
-<header><div class="brand">JAMIE<span>JETS</span> / MVS</div><small>IBM 3270 TERMINAL</small></header>
 <main>
   <section id="loginView" class="win2000" hidden>
     <div class="win-title">Log On to MVS</div>
@@ -68,7 +64,7 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.31</small></div>
+    </form><small class="login-version">v1.32</small></div>
   </section>
   <section id="terminalView" hidden>
 <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite" title="Stretch to fill screen">Stretch</output><button id="zoomIn" type="button" disabled aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
