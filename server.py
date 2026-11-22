@@ -23,6 +23,7 @@ from aiohttp import WSMsgType, web
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = Path(os.environ.get("WEB3270_CONFIG", "/etc/web3270/config.json"))
 COOKIE = "web3270_session"
+ADMIN_COOKIE = "web3270_admin"
 SESSION_SECONDS = 8 * 60 * 60
 REPLAY_LIMIT = 1024 * 1024
 MAX_TERMINALS = 8
@@ -52,8 +53,8 @@ def sign_session(config, username):
     return message + "." + signature
 
 
-def session_username(request):
-    token = request.cookies.get(COOKIE, "")
+def session_username(request, cookie=COOKIE):
+    token = request.cookies.get(cookie, "")
     try:
         expiry, username, signature = token.split(".", 2)
         if int(expiry) < time.time() or int(expiry) > time.time() + SESSION_SECONDS:
@@ -69,6 +70,10 @@ def session_username(request):
 
 def authenticated(request):
     return session_username(request) is not None
+
+
+def admin_access(request):
+    return authenticated(request) and session_username(request, ADMIN_COOKIE) == "ADMIN"
 
 
 def same_origin(request):
@@ -109,7 +114,29 @@ async def sessions(request):
             {"username": name, "connected": terminal.client is not None and not terminal.client.closed}
             for name, terminal in sorted(request.app["terminal_sessions"].items())
         ]
-    return web.json_response({"sessions": items, "current": session_username(request)}, headers={"Cache-Control": "no-store"})
+    return web.json_response({"sessions": items, "current": session_username(request),
+                              "can_switch": admin_access(request)}, headers={"Cache-Control": "no-store"})
+
+
+async def switch_session(request):
+    if not same_origin(request) or not admin_access(request):
+        raise web.HTTPForbidden()
+    try:
+        payload = await request.json()
+        username = payload["username"]
+        if not isinstance(username, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,16}", username):
+            raise ValueError()
+        username = username.upper()
+    except (ValueError, KeyError, TypeError):
+        raise web.HTTPBadRequest()
+    async with request.app["terminal_lock"]:
+        if username not in request.app["terminal_sessions"]:
+            raise web.HTTPNotFound(text="Session no longer exists")
+    response = web.json_response({"ok": True, "username": username})
+    response.set_cookie(COOKIE, sign_session(request.app["config"], username), secure=True,
+                        httponly=True, samesite="Strict", path=request.app["config"]["base_path"] + "/",
+                        max_age=SESSION_SECONDS)
+    return response
 
 
 async def login(request):
@@ -132,6 +159,12 @@ async def login(request):
     response.set_cookie(COOKIE, sign_session(request.app["config"], username.upper()), secure=True,
                         httponly=True, samesite="Strict", path=request.app["config"]["base_path"] + "/",
                         max_age=SESSION_SECONDS)
+    if username.upper() == "ADMIN":
+        response.set_cookie(ADMIN_COOKIE, sign_session(request.app["config"], "ADMIN"), secure=True,
+                            httponly=True, samesite="Strict", path=request.app["config"]["base_path"] + "/",
+                            max_age=SESSION_SECONDS)
+    else:
+        response.del_cookie(ADMIN_COOKIE, path=request.app["config"]["base_path"] + "/")
     return response
 
 
@@ -140,6 +173,7 @@ async def logout(request):
         raise web.HTTPForbidden()
     response = web.json_response({"ok": True})
     response.del_cookie(COOKIE, path=request.app["config"]["base_path"] + "/")
+    response.del_cookie(ADMIN_COOKIE, path=request.app["config"]["base_path"] + "/")
     return response
 
 
@@ -342,6 +376,7 @@ def main():
     app.router.add_get("/", index)
     app.router.add_get("/status", status)
     app.router.add_get("/sessions", sessions)
+    app.router.add_post("/switch", switch_session)
     app.router.add_post("/login", login)
     app.router.add_post("/logout", logout)
     app.router.add_post("/disconnect", disconnect)
