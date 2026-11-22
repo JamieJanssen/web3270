@@ -16,6 +16,9 @@
     body:has(#loginView:not([hidden])){background:#3b71a7;color:#000;font-family:Tahoma,'MS Sans Serif',Arial,sans-serif;color-scheme:light}
     body:has(#loginView:not([hidden])) header{display:none}
     body:has(#loginView:not([hidden])) main{min-height:100dvh}
+    body:has(#terminalView:not([hidden])) header{display:none}
+    body:has(#terminalView:not([hidden])) main{min-height:100dvh}
+    body:has(#terminalView:not([hidden])) #terminalView:not(:fullscreen):not(.pseudo-fullscreen){height:calc(100dvh - 16px)}
     #loginView.win2000{width:min(415px,calc(100vw - 24px));padding:0;border:2px solid;border-color:#fff #333 #333 #fff;border-radius:0;background:#d4d0c8;box-shadow:1px 1px 0 #777;font-size:11px;color:#000}
     .win-title{height:19px;display:flex;align-items:center;padding:0 4px;background:linear-gradient(90deg,#0a246a,#5e9ad5);color:#fff;font-size:11px;font-weight:700}
     .win-banner{height:92px;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(#fff 0%,#fff 84%,#dbe3e4 85%,#247aa7 100%);border-bottom:1px solid #757575}
@@ -56,7 +59,7 @@
       <div class="win-row"><label for="password">Password:</label><input id="password" type="password" autocomplete="current-password" required autofocus></div>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.06</small></div>
+    </form><small class="login-version">v1.07</small></div>
   </section>
   <section id="terminalView" hidden>
     <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span></div>
