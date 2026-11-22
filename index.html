@@ -39,7 +39,7 @@
   <section id="loginView" class="card" hidden>
     <h1>Welcome back</h1><p>Sign in to connect to the MVS mainframe.</p>
     <form id="loginForm"><label for="password">Access password</label><input id="password" type="password" autocomplete="current-password" required autofocus><p id="error" role="alert"></p><button type="submit">Connect to MVS</button></form>
-    <small class="login-version">v1.01</small>
+    <small class="login-version">v1.02</small>
   </section>
   <section id="terminalView" hidden>
     <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span></div>
@@ -109,9 +109,9 @@
     }
   });
   document.addEventListener('keydown',event=>{
-    if(!isIPad || !term || $('terminalView').hidden || event.altKey || event.shiftKey)return;
+    if(!term || $('terminalView').hidden || event.altKey || event.shiftKey)return;
     // Intercept before xterm/c3270, where Ctrl+3 would otherwise mean Escape.
-    if(!((event.ctrlKey && !event.metaKey) || (event.metaKey && !event.ctrlKey)))return;
+    if(!((event.ctrlKey && !event.metaKey) || (isIPad && event.metaKey && !event.ctrlKey)))return;
     const key=event.key;
     if(!Object.prototype.hasOwnProperty.call(functionKeys,key))return;
     event.preventDefault();
