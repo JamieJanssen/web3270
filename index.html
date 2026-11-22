@@ -36,6 +36,8 @@
     #terminalView{width:100%;height:calc(100dvh - 60px);align-self:stretch;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);column-gap:12px;row-gap:6px}#screen{grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:hidden;box-shadow:0 20px 70px #0008;min-height:0}
     .toolbar{grid-column:2;grid-row:1;display:flex;justify-content:flex-end;align-items:center;height:42px;gap:8px}.toolbar-actions{display:flex;gap:6px;align-items:center;height:42px}.toolbar button{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 13px}.toolbar .icon-button{min-width:39px;min-height:0;padding:0 6px;font-size:23px;line-height:1}.icon-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.zoom-controls{display:flex;align-items:center;gap:0;height:42px;border-radius:7px;background:#243d4e;white-space:nowrap}.toolbar .zoom-controls button{min-width:32px;padding:0 8px;border-radius:7px;background:transparent;color:#e2edef;font-size:19px;line-height:1}.zoom-controls output{min-width:45px;text-align:center;font-size:12px;font-weight:700}.dot{display:inline-block;flex:none;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14;margin:0 5px 0 8px}
     .pf-bar{grid-column:1;grid-row:1;align-self:center;display:flex;align-items:center;height:42px;gap:6px;position:relative;padding:0;justify-content:flex-start;min-width:0}.pf-bar button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;height:42px;min-width:50px;padding:0 12px;background:#243d4e;color:#e2edef}.pf-bar button.pf-special{min-width:68px;font-weight:800}.pf-bar button:active{background:#6ad5bd;color:#071a1c}.pf-bar .pf-more{font-size:20px;min-width:44px;padding:0 12px}.pf-popover{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;width:min(340px,calc(100vw - 32px));padding:12px;background:#122232;border:1px solid #39576c;border-radius:10px;box-shadow:0 15px 45px #000b}.pf-popover button{min-width:0;padding:12px 5px}
+    button.dot{display:inline-block;flex:none;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14;margin:0 5px 0 8px;padding:0;cursor:pointer}button.dot:focus-visible{outline:2px solid #e2edef;outline-offset:5px}
+    .sessions-overlay{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:20px;background:#000a}.sessions-dialog{width:min(410px,100%);padding:22px;border:1px solid #39576c;border-radius:12px;background:#122232;color:#d8e9ed;box-shadow:0 22px 80px #000c}.sessions-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.sessions-heading h2{margin:0;font-size:19px}.sessions-heading button{background:#243d4e;color:#e2edef;padding:5px 11px;font-size:19px}.sessions-list{display:grid;gap:8px;max-height:55dvh;overflow:auto}.sessions-entry{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 12px;background:#1c3040;border-radius:7px;font-size:14px}.sessions-state{display:flex;align-items:center;gap:8px;color:#aabdc8;font-size:12px}.sessions-state i{width:10px;height:10px;border-radius:50%;background:#f2b960}.sessions-state.connected i{background:#6ad5bd}.sessions-empty{margin:0;color:#aabdc8;font-size:14px}
     .xterm{flex:none;transform-origin:center center}.xterm .xterm-viewport{scrollbar-width:none!important}.xterm .xterm-viewport::-webkit-scrollbar{display:none} [hidden]{display:none!important}
     #terminalView:fullscreen{grid-template-rows:minmax(0,1fr) auto;background:#0a1018;padding:8px 12px 3px;width:100%;height:100%;overflow:hidden}
     #terminalView:fullscreen #screen{grid-row:1;height:auto;min-height:0}
@@ -61,12 +63,13 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.13</small></div>
+    </form><small class="login-version">v1.14</small></div>
   </section>
   <section id="terminalView" hidden>
-    <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span></div>
+    <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
     <div class="pf-bar" id="pfBar" role="group" aria-label="3270 function keys"><div class="pf-popover" id="pfPopover" role="group" aria-label="All 3270 PF keys" hidden></div></div>
     <div id="screen"></div>
+    <div id="sessionsOverlay" class="sessions-overlay" hidden><section class="sessions-dialog" role="dialog" aria-modal="true" aria-labelledby="sessionsTitle"><div class="sessions-heading"><h2 id="sessionsTitle">MVS Sessions</h2><button id="sessionsClose" type="button" aria-label="Close sessions">×</button></div><div id="sessionsList" class="sessions-list" aria-live="polite"></div></section></div>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
@@ -75,6 +78,38 @@
   const $ = id => document.getElementById(id);
   const base = location.pathname.replace(/\/?$/, '/');
   let socket, term, screenObserver;
+  const sessionsOverlay=$('sessionsOverlay');
+  function closeSessions(){sessionsOverlay.hidden=true;}
+  $('dot').addEventListener('click',async()=>{
+    sessionsOverlay.hidden=false;
+    $('sessionsList').replaceChildren();
+    const loading=document.createElement('p');loading.className='sessions-empty';loading.textContent='Loading sessions…';
+    $('sessionsList').appendChild(loading);
+    $('sessionsClose').focus();
+    try{
+      const response=await fetch(base+'sessions',{cache:'no-store'});
+      if(!response.ok)throw Error('Could not load sessions');
+      const {sessions}=await response.json();
+      if(sessionsOverlay.hidden)return;
+      $('sessionsList').replaceChildren();
+      if(!sessions.length){
+        const empty=document.createElement('p');empty.className='sessions-empty';empty.textContent='No active MVS sessions.';
+        $('sessionsList').appendChild(empty);
+      }
+      for(const session of sessions){
+        const row=document.createElement('div');row.className='sessions-entry';
+        const name=document.createElement('strong');name.textContent=session.username;
+        const state=document.createElement('span');state.className='sessions-state'+(session.connected?' connected':'');
+        const indicator=document.createElement('i');indicator.setAttribute('aria-hidden','true');
+        state.append(indicator,document.createTextNode(session.connected?'Connected':'Idle'));
+        row.append(name,state);$('sessionsList').appendChild(row);
+      }
+    }catch(error){
+      if(!sessionsOverlay.hidden)loading.textContent=error.message;
+    }
+  });
+  $('sessionsClose').addEventListener('click',closeSessions);
+  sessionsOverlay.addEventListener('click',event=>{if(event.target===sessionsOverlay)closeSessions();});
   let backgroundAt=0, reconnectTimer=null, manuallyDisconnected=false;
   let socketConnectingSince=0, lastWatchdogTick=Date.now();
   let resizeTerminal=()=>{};
@@ -249,6 +284,7 @@
   });
   document.addEventListener('fullscreenchange',syncFullscreen);
   document.addEventListener('keydown',event=>{
+    if(event.key==='Escape' && !sessionsOverlay.hidden){closeSessions();event.stopImmediatePropagation();return;}
     if(event.key==='Escape' && $('terminalView').classList.contains('pseudo-fullscreen')){
       exitTerminalFullscreen();
     }
@@ -359,9 +395,9 @@
     socket=new WebSocket(proto+'//'+location.host+base+'ws');
     socketConnectingSince=Date.now();
     const currentSocket=socket;
-    socket.onopen=()=>{ if(socket!==currentSocket)return;socketConnectingSince=0;$('dot').style.background='#6ad5bd';$('dot').setAttribute('aria-label','Connected');$('dot').title='Connected'; };
-    socket.onclose=event=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Disconnected');$('dot').title='Disconnected';if(event.code===4001){manuallyDisconnected=true;$('dot').title='Session opened on another device';}else scheduleReconnect(); };
-    socket.onerror=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Connection error');$('dot').title='Connection error'; };
+    socket.onopen=()=>{ if(socket!==currentSocket)return;socketConnectingSince=0;$('dot').style.background='#6ad5bd';$('dot').setAttribute('aria-label','Connected — show sessions');$('dot').title='Connected — show sessions'; };
+    socket.onclose=event=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Disconnected — show sessions');$('dot').title='Disconnected — show sessions';if(event.code===4001){manuallyDisconnected=true;$('dot').title='Session opened on another device — show sessions';}else scheduleReconnect(); };
+    socket.onerror=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Connection error — show sessions');$('dot').title='Connection error — show sessions'; };
     socket.onmessage=e=>{if(socket!==currentSocket || !term)return;const binary=atob(e.data);const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));term.write(bytes);};
     term.onData(sendTerminalInput);
   }
