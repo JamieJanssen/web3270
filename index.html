@@ -67,7 +67,7 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.25</small></div>
+    </form><small class="login-version">v1.26</small></div>
   </section>
   <section id="terminalView" hidden>
 <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite" title="Stretch to fill screen">Stretch</output><button id="zoomIn" type="button" disabled aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
@@ -158,8 +158,8 @@
   };
   function sendTerminalInput(data){
     if(!socket || socket.readyState!==WebSocket.OPEN)return;
-    // Only change typed/pasted text, never escape sequences for mouse or PF keys.
-    if(terminalCaps && !data.includes('\x1b'))data=data.replace(/[a-z]/g,c=>c.toUpperCase());
+    // Only change typed/pasted text, never escape sequences or c3270 Ctrl+A commands.
+    if(terminalCaps && !/[\x1b\x01]/.test(data))data=data.replace(/[a-z]/g,c=>c.toUpperCase());
     const bytes=new TextEncoder().encode(data);
     let s='';for(const b of bytes)s+=String.fromCharCode(b);
     socket.send(btoa(s));
@@ -204,6 +204,14 @@
     if(term)term.focus();
   });
   $('pfBar').insertBefore(pa1,$('pfPopover'));
+  const clear=document.createElement('button');
+  clear.type='button';clear.textContent='CLEAR';clear.title='3270 Clear screen';
+  clear.addEventListener('click',()=>{
+    // c3270 default keymap: Ctrl+A followed by c invokes Clear.
+    sendTerminalInput('\x01c');
+    if(term)term.focus();
+  });
+  $('pfBar').insertBefore(clear,$('pfPopover'));
   const caps=document.createElement('button');
   caps.type='button';caps.textContent='CAPS';caps.title='Uppercase typing in this terminal only';
   caps.setAttribute('aria-pressed','false');
