@@ -16,18 +16,16 @@
     input{width:100%;background:#091521;border:1px solid #39576c;border-radius:7px;color:white;padding:13px;font:inherit}
     input:focus{outline:2px solid #6ad5bd}button{border:0;border-radius:7px;background:#6ad5bd;color:#071a1c;font-weight:700;padding:12px 19px;cursor:pointer}
     button:hover{background:#9df0db}button.secondary{background:#243d4e;color:#e2edef}#error{color:#ff9e9e;min-height:1.5em}
-    #terminalView{width:100%;align-self:stretch}#screen{display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:hidden;box-shadow:0 20px 70px #0008;height:max(320px,calc(100dvh - 255px))}
-    .toolbar{display:flex;justify-content:flex-end;align-items:center;margin-bottom:14px;gap:10px}.toolbar-actions{display:flex;gap:8px;align-items:center}.dot{display:inline-block;flex:none;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14;margin:0 5px 0 8px}
-    .pf-bar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px;justify-content:flex-start;min-width:0}.pf-bar::-webkit-scrollbar{display:none}.pf-bar button{flex:0 0 auto;min-width:50px;padding:10px 12px;background:#243d4e;color:#e2edef}.pf-bar button.pf-special{min-width:68px;font-weight:800}.pf-bar button:active{background:#6ad5bd;color:#071a1c}
+    #terminalView{width:100%;align-self:stretch;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;column-gap:12px}#screen{grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:hidden;box-shadow:0 20px 70px #0008;height:max(320px,calc(100dvh - 205px))}#terminalView>p{grid-column:1/-1;grid-row:3}
+    .toolbar{grid-column:2;grid-row:1;display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px;gap:10px}.toolbar-actions{display:flex;gap:8px;align-items:center}.dot{display:inline-block;flex:none;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14;margin:0 5px 0 8px}
+    .pf-bar{grid-column:1;grid-row:1;align-self:center;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px;justify-content:flex-start;min-width:0}.pf-bar::-webkit-scrollbar{display:none}.pf-bar button{flex:0 0 auto;min-width:50px;padding:10px 12px;background:#243d4e;color:#e2edef}.pf-bar button.pf-special{min-width:68px;font-weight:800}.pf-bar button:active{background:#6ad5bd;color:#071a1c}
     .xterm{flex:none;transform-origin:center center}.xterm .xterm-viewport{scrollbar-width:none!important}.xterm .xterm-viewport::-webkit-scrollbar{display:none} [hidden]{display:none!important}
-    #terminalView:fullscreen{display:flex;flex-direction:column;background:#0a1018;padding:12px;width:100%;height:100%;overflow:hidden}
-    #terminalView:fullscreen #screen{flex:1;height:auto;min-height:0}
-    #terminalView:fullscreen .toolbar{flex:none}
+    #terminalView:fullscreen{grid-template-rows:auto minmax(0,1fr);background:#0a1018;padding:12px;width:100%;height:100%;overflow:hidden}
+    #terminalView:fullscreen #screen{height:auto;min-height:0}
     #terminalView:fullscreen > p{display:none}
-    #terminalView.pseudo-fullscreen{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;background:#0a1018;padding:12px;width:100%;height:100dvh;overflow:hidden}
-    #terminalView.pseudo-fullscreen .pf-bar{flex:none;order:0;justify-content:flex-start}
-    #terminalView.pseudo-fullscreen #screen{flex:1;order:1;height:auto;min-height:0}
-    #terminalView.pseudo-fullscreen .toolbar{flex:none;order:2;justify-content:flex-end;margin:10px 4px 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+    #terminalView.pseudo-fullscreen{position:fixed;inset:0;z-index:1000;grid-template-rows:auto minmax(0,1fr);background:#0a1018;padding:12px;width:100%;height:100dvh;overflow:hidden}
+    #terminalView.pseudo-fullscreen #screen{height:auto;min-height:0}
+    #terminalView.pseudo-fullscreen .toolbar{margin-bottom:10px}
     #terminalView.pseudo-fullscreen > p{display:none}
     @media(max-width:700px){header{padding:0 16px}main{padding:12px}.card{padding:24px}#screen{padding:8px}.pf-bar{justify-content:flex-start}}
   </style>
