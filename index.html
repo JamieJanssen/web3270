@@ -61,7 +61,7 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.09</small></div>
+    </form><small class="login-version">v1.10</small></div>
   </section>
   <section id="terminalView" hidden>
     <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span></div>
@@ -195,16 +195,32 @@
   async function check(){try{const r=await fetch(base+'status',{cache:'no-store'});const j=await r.json();j.authenticated?showTerminal():showLogin();}catch{showLogin();$('error').textContent='Server unavailable.';}}
   $('loginForm').addEventListener('submit',async e=>{
     e.preventDefault();$('error').textContent='';
+    const wantsFullscreen=$('loginFullscreen').checked;
+    // Request native browser fullscreen synchronously with the OK key/click:
+    // browsers reject requests made after an asynchronous login or reload.
+    const fullscreenRequest=wantsFullscreen && !isIPad && document.documentElement.requestFullscreen
+      ?document.documentElement.requestFullscreen().then(()=>true,()=>false)
+      :Promise.resolve(false);
     try{const r=await fetch(base+'login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('password').value})});
       if(!r.ok)throw Error('Incorrect password or login unavailable');
-      if($('loginFullscreen').checked)sessionStorage.setItem('web3270-login-fullscreen','1');
-      else sessionStorage.removeItem('web3270-login-fullscreen');
+      if(wantsFullscreen){
+        await fullscreenRequest;
+        sessionStorage.removeItem('web3270-login-fullscreen');
+        showTerminal();
+        $('terminalView').classList.add('pseudo-fullscreen');
+        syncFullscreen();
+        return;
+      }
+      sessionStorage.removeItem('web3270-login-fullscreen');
       // A full navigation also clears password-manager UI injected by extensions.
       // The authentication cookie survives; check() opens the terminal on reload.
       passwordField.blur();
       passwordField.value='';
       window.location.reload();
-    }catch(err){$('error').textContent=err.message;}
+    }catch(err){
+      if(await fullscreenRequest && document.fullscreenElement)await document.exitFullscreen();
+      $('error').textContent=err.message;
+    }
   });
   $('logout').addEventListener('click',async()=>{manuallyDisconnected=true;if(reconnectTimer)clearTimeout(reconnectTimer);await exitTerminalFullscreen();if(socket)socket.close();if(screenObserver){screenObserver.disconnect();screenObserver=null;}if(term){term.dispose();term=null;}$('screen').replaceChildren();await fetch(base+'logout',{method:'POST'});showLogin();});
   $('disconnect').addEventListener('click',async()=>{
