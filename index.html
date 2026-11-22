@@ -39,7 +39,7 @@
   <section id="loginView" class="card" hidden>
     <h1>Welcome back</h1><p>Sign in to connect to the MVS mainframe.</p>
     <form id="loginForm"><label for="password">Access password</label><input id="password" type="password" autocomplete="current-password" required autofocus><p id="error" role="alert"></p><button type="submit">Connect to MVS</button></form>
-    <small class="login-version">v1.03</small>
+    <small class="login-version">v1.04</small>
   </section>
   <section id="terminalView" hidden>
     <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span></div>
@@ -143,13 +143,22 @@
     if(document.fullscreenElement)await document.exitFullscreen();
     syncFullscreen();
   }
-  function showLogin(){ $('terminalView').hidden=true; $('loginView').hidden=false; $('password').focus(); }
+  const loginView=$('loginView');
+  const passwordField=$('password');
+  function showLogin(){
+    $('terminalView').hidden=true;
+    // The same form node retains its submit handler after being reattached.
+    $('terminalView').before(loginView);
+    loginView.hidden=false;
+    passwordField.focus();
+  }
   function showTerminal(){
-    // Release the password field before hiding it so browser password managers
-    // have a chance to dismiss any popup anchored to that field.
-    $('password').blur();
-    $('password').value='';
-    $('loginView').hidden=true;
+    // Remove the password field from the DOM entirely while authenticated.
+    // Merely hiding it can leave some password-manager overlays on screen.
+    passwordField.blur();
+    passwordField.value='';
+    loginView.hidden=true;
+    loginView.remove();
     $('terminalView').hidden=false;
     manuallyDisconnected=false;
     connect();
