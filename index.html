@@ -52,6 +52,7 @@
   const base = location.pathname.replace(/\/?$/, '/');
   let socket, term, screenObserver;
   let backgroundAt=0, reconnectTimer=null, manuallyDisconnected=false;
+  let socketConnectingSince=0, lastWatchdogTick=Date.now();
   let resizeTerminal=()=>{};
   const isIPad=/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
   let zoom = 100;
@@ -193,12 +194,12 @@
       if(!manuallyDisconnected && socket && socket.readyState===WebSocket.CLOSED)connect();
     },1500);
   }
-  function resumeTerminal(){
+  function resumeTerminal(forceReconnect=false){
     if(manuallyDisconnected || $('terminalView').hidden)return;
     const wasAway=backgroundAt>0 && Date.now()-backgroundAt>1000;
     backgroundAt=0;
-    if(socket && socket.readyState===WebSocket.CONNECTING)return;
-    if(!socket || socket.readyState!==WebSocket.OPEN || wasAway){
+    if(socket && socket.readyState===WebSocket.CONNECTING && !forceReconnect && Date.now()-socketConnectingSince<12000)return;
+    if(!socket || socket.readyState!==WebSocket.OPEN || wasAway || forceReconnect){
       if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
       connect();
     }else if(term){term.focus();}
@@ -208,8 +209,21 @@
     else resumeTerminal();
   });
   window.addEventListener('blur',()=>{if(!backgroundAt)backgroundAt=Date.now();});
-  window.addEventListener('focus',resumeTerminal);
-  window.addEventListener('online',resumeTerminal);
+  window.addEventListener('focus',()=>resumeTerminal());
+  window.addEventListener('online',()=>resumeTerminal());
+  window.addEventListener('pageshow',()=>resumeTerminal());
+  // Sleeping machines can wake without firing focus/online/visibilitychange.
+  // A large wall-clock gap means this timer was suspended during sleep.
+  setInterval(()=>{
+    const now=Date.now();
+    const slept=now-lastWatchdogTick>12000;
+    lastWatchdogTick=now;
+    if(manuallyDisconnected || $('terminalView').hidden || document.hidden)return;
+    if(slept || !socket || socket.readyState===WebSocket.CLOSED ||
+       (socket.readyState===WebSocket.CONNECTING && now-socketConnectingSince>12000)){
+      resumeTerminal(slept);
+    }
+  },5000);
   function applyStretch(){
     if(!term || !term.element)return;
     const surface=term.element;
@@ -266,8 +280,9 @@
     screenObserver.observe($('screen'));
     const proto=location.protocol==='https:'?'wss:':'ws:';
     socket=new WebSocket(proto+'//'+location.host+base+'ws');
+    socketConnectingSince=Date.now();
     const currentSocket=socket;
-    socket.onopen=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#6ad5bd';$('dot').setAttribute('aria-label','Connected');$('dot').title='Connected'; };
+    socket.onopen=()=>{ if(socket!==currentSocket)return;socketConnectingSince=0;$('dot').style.background='#6ad5bd';$('dot').setAttribute('aria-label','Connected');$('dot').title='Connected'; };
     socket.onclose=event=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Disconnected');$('dot').title='Disconnected';if(event.code===4001){manuallyDisconnected=true;$('dot').title='Session opened on another device';}else scheduleReconnect(); };
     socket.onerror=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Connection error');$('dot').title='Connection error'; };
     socket.onmessage=e=>{if(socket!==currentSocket || !term)return;const binary=atob(e.data);const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));term.write(bytes);};
