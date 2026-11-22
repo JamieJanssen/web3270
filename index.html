@@ -36,6 +36,7 @@
     #terminalView{width:100%;height:calc(100dvh - 60px);align-self:stretch;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);column-gap:12px;row-gap:6px}#screen{grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:hidden;box-shadow:0 20px 70px #0008;min-height:0}
     .toolbar{grid-column:2;grid-row:1;display:flex;justify-content:flex-end;align-items:center;height:42px;gap:8px}.toolbar-actions{display:flex;gap:6px;align-items:center;height:42px}.toolbar button{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 13px}.toolbar .icon-button{min-width:39px;min-height:0;padding:0 6px;font-size:23px;line-height:1}.icon-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.zoom-controls{display:flex;align-items:center;gap:0;height:42px;border-radius:7px;background:#243d4e;white-space:nowrap}.toolbar .zoom-controls button{min-width:32px;padding:0 8px;border-radius:7px;background:transparent;color:#e2edef;font-size:19px;line-height:1}.zoom-controls output{min-width:45px;text-align:center;font-size:12px;font-weight:700}.dot{display:inline-block;flex:none;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14;margin:0 5px 0 8px}
     .pf-bar{grid-column:1;grid-row:1;align-self:center;display:flex;align-items:center;height:42px;gap:6px;position:relative;padding:0;justify-content:flex-start;min-width:0}.pf-bar button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;height:42px;min-width:50px;padding:0 12px;background:#243d4e;color:#e2edef}.pf-bar button.pf-special{min-width:68px;font-weight:800}.pf-bar button:active{background:#6ad5bd;color:#071a1c}.pf-bar .pf-more{font-size:20px;min-width:44px;padding:0 12px}.pf-popover{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;width:min(340px,calc(100vw - 32px));padding:12px;background:#122232;border:1px solid #39576c;border-radius:10px;box-shadow:0 15px 45px #000b}.pf-popover button{min-width:0;padding:12px 5px}
+    .pf-bar button.caps-enabled{background:#6ad5bd;color:#071a1c}
     button.dot{display:inline-block;flex:none;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14;margin:0 5px 0 8px;padding:0;cursor:pointer}button.dot:focus-visible{outline:2px solid #e2edef;outline-offset:5px}
     .sessions-overlay{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:20px;background:#000a}.sessions-dialog{width:min(410px,100%);padding:22px;border:1px solid #39576c;border-radius:12px;background:#122232;color:#d8e9ed;box-shadow:0 22px 80px #000c}.sessions-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.sessions-heading h2{margin:0;font-size:19px}.sessions-heading button{background:#243d4e;color:#e2edef;padding:5px 11px;font-size:19px}.sessions-list{display:grid;gap:8px;max-height:55dvh;overflow:auto}.sessions-entry{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 12px;background:#1c3040;border-radius:7px;font-size:14px}.sessions-state{display:flex;align-items:center;gap:8px;color:#aabdc8;font-size:12px}.sessions-state i{width:10px;height:10px;border-radius:50%;background:#f2b960}.sessions-state.connected i{background:#6ad5bd}.sessions-empty{margin:0;color:#aabdc8;font-size:14px}
     .sessions-name{display:flex;align-items:center;gap:7px}.sessions-you{color:#6ad5bd;font-size:11px;font-weight:700}
@@ -66,7 +67,7 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.23</small></div>
+    </form><small class="login-version">v1.24</small></div>
   </section>
   <section id="terminalView" hidden>
 <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite" title="Stretch to fill screen">Stretch</output><button id="zoomIn" type="button" disabled aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
@@ -149,6 +150,7 @@
   const isIPad=/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
   let zoom = 100;
   let proportionalZoom = false;
+  let terminalCaps = false;
   const functionKeys={
     '1':'\x1bOP','2':'\x1bOQ','3':'\x1bOR','4':'\x1bOS',
     '5':'\x1b[15~','6':'\x1b[17~','7':'\x1b[18~','8':'\x1b[19~',
@@ -156,6 +158,8 @@
   };
   function sendTerminalInput(data){
     if(!socket || socket.readyState!==WebSocket.OPEN)return;
+    // Only change typed/pasted text, never escape sequences for mouse or PF keys.
+    if(terminalCaps && !data.includes('\x1b'))data=data.replace(/[a-z]/g,c=>c.toUpperCase());
     const bytes=new TextEncoder().encode(data);
     let s='';for(const b of bytes)s+=String.fromCharCode(b);
     socket.send(btoa(s));
@@ -192,6 +196,16 @@
     more.setAttribute('aria-expanded',String(show));
   });
   $('pfBar').insertBefore(more,$('pfPopover'));
+  const caps=document.createElement('button');
+  caps.type='button';caps.textContent='CAPS';caps.title='Uppercase typing in this terminal only';
+  caps.setAttribute('aria-pressed','false');
+  caps.addEventListener('click',()=>{
+    terminalCaps=!terminalCaps;
+    caps.classList.toggle('caps-enabled',terminalCaps);
+    caps.setAttribute('aria-pressed',String(terminalCaps));
+    if(term)term.focus();
+  });
+  $('pfBar').insertBefore(caps,$('pfPopover'));
   for(let n=1;n<=24;n++)$('pfPopover').appendChild(pfButton(n));
   document.addEventListener('pointerdown',event=>{
     if(!$('pfBar').contains(event.target)){
