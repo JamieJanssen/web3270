@@ -20,7 +20,7 @@
     body:has(#terminalView:not([hidden])) main{min-height:100dvh;padding:6px 12px}
     body:has(#terminalView:not([hidden])) #terminalView:not(:fullscreen):not(.pseudo-fullscreen){height:calc(100dvh - 12px)}
     #loginView.win2000{width:min(415px,calc(100vw - 24px));padding:0;border:2px solid;border-color:#fff #333 #333 #fff;border-radius:0;background:#d4d0c8;box-shadow:1px 1px 0 #777;font-size:11px;color:#000}
-    .win-title{height:19px;display:flex;align-items:center;padding:0 4px;background:linear-gradient(90deg,#0a246a,#5e9ad5);color:#fff;font-size:11px;font-weight:700}
+    .win-title{height:19px;display:flex;align-items:center;padding:0 4px;background:linear-gradient(90deg,#0a246a,#5e9ad5);color:#fff;font-size:11px;font-weight:700;cursor:grab;touch-action:none;user-select:none}.win-title:active{cursor:grabbing}
     .win-banner{height:92px;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(#fff 0%,#fff 84%,#dbe3e4 85%,#247aa7 100%);border-bottom:1px solid #757575}
     .win-logo{display:grid;grid-template-columns:repeat(2,17px);grid-template-rows:repeat(2,17px);gap:2px;transform:skew(-8deg) rotate(-7deg);filter:drop-shadow(4px 4px 0 #ee7900)}
     .win-logo i:nth-child(1){background:#ec3425}.win-logo i:nth-child(2){background:#58a431}.win-logo i:nth-child(3){background:#2876bf}.win-logo i:nth-child(4){background:#f6c330}
@@ -65,7 +65,7 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.19</small></div>
+    </form><small class="login-version">v1.20</small></div>
   </section>
   <section id="terminalView" hidden>
 <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
@@ -233,6 +233,28 @@
     syncFullscreen();
   }
   const loginView=$('loginView');
+  const loginTitle=loginView.querySelector('.win-title');
+  let dragPointer=null,dragX=0,dragY=0,loginX=0,loginY=0;
+  loginTitle.addEventListener('pointerdown',event=>{
+    if(dragPointer!==null || (event.pointerType==='mouse' && event.button!==0))return;
+    dragPointer=event.pointerId;
+    dragX=event.clientX;
+    dragY=event.clientY;
+    loginTitle.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+  loginTitle.addEventListener('pointermove',event=>{
+    if(event.pointerId!==dragPointer)return;
+    const rect=loginView.getBoundingClientRect();
+    const dx=Math.max(-rect.left,Math.min(window.innerWidth-rect.right,event.clientX-dragX));
+    const dy=Math.max(-rect.top,Math.min(window.innerHeight-rect.bottom,event.clientY-dragY));
+    loginX+=dx;loginY+=dy;
+    loginView.style.transform=`translate(${loginX}px,${loginY}px)`;
+    dragX=event.clientX;dragY=event.clientY;
+  });
+  function stopLoginDrag(event){if(event.pointerId===dragPointer)dragPointer=null;}
+  loginTitle.addEventListener('pointerup',stopLoginDrag);
+  loginTitle.addEventListener('pointercancel',stopLoginDrag);
   const passwordField=$('password');
   const usernameField=$('username');
   function showLogin(){
