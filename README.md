@@ -6,7 +6,9 @@ The terminal uses IBM 3270 Model 2 (80 columns × 24 rows). The frontend has a N
 
 ## Persistent session
 
-There is one shared MVS connection for all authenticated browsers. Closing the tab, refreshing the page, or logging out of the website does not immediately disconnect MVS. The next authenticated browser takes over the same terminal and replays its recent ANSI output. After **60 minutes with no browser attached**, c3270 is terminated. Set `session_timeout_minutes` in `config.json` to change that limit (default: 60). `Disconnect` explicitly terminates the MVS session; reloading then starts a fresh one. Restarting Python/Jester also ends the session. For sessions with more than 1 MiB of accumulated terminal output, screen replay is best-effort; the live MVS connection remains active.
+The website login username selects a separate persistent c3270 session (up to eight usernames at once). For example, `Herc01` and `Herc02` can each have their own independent MVS connection and login. Usernames are case-insensitive and support 1–16 ASCII letters, numbers, `_` or `-`. The **website access password is still shared**; the username is only a session selector, **not** separate authentication or an automatic MVS login. Use separate browser profiles or private windows to connect as different usernames at the same time, because tabs within one browser profile share the login cookie.
+
+Closing a tab, refreshing the page, or logging out of the website does not immediately disconnect that user's MVS session. Reconnecting with the same username takes over its terminal and replays recent ANSI output. After **60 minutes with no browser attached**, that c3270 process is terminated. Set `session_timeout_minutes` in `config.json` to change that limit (default: 60). `Disconnect` terminates only the selected username's MVS session; reloading then starts a fresh one. Restarting Python/Jester ends **all** sessions. For sessions with more than 1 MiB of accumulated terminal output, screen replay is best-effort; the live MVS connection remains active.
 
 ## Directory layout on Jester
 
