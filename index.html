@@ -12,6 +12,7 @@
     .brand{font-weight:700;letter-spacing:.12em}.brand span{color:#6ad5bd}small{color:#91a6b8}
     main{display:grid;place-items:center;min-height:calc(100vh - 44px);padding:8px 12px}
     .card{width:min(100%,390px);padding:32px;border:1px solid #294154;border-radius:14px;background:#122232;box-shadow:0 22px 70px #0006}
+    .login-version{display:block;margin-top:18px;text-align:right;font-size:11px;opacity:.65;letter-spacing:.04em}
     h1{font-size:24px;margin:0 0 8px}p{color:#91a6b8;line-height:1.5}label{display:block;font-size:13px;margin:28px 0 9px}
     input{width:100%;background:#091521;border:1px solid #39576c;border-radius:7px;color:white;padding:13px;font:inherit}
     input:focus{outline:2px solid #6ad5bd}button{border:0;border-radius:7px;background:#6ad5bd;color:#071a1c;font-weight:700;padding:12px 19px;cursor:pointer}
@@ -38,6 +39,7 @@
   <section id="loginView" class="card" hidden>
     <h1>Welcome back</h1><p>Sign in to connect to the MVS mainframe.</p>
     <form id="loginForm"><label for="password">Access password</label><input id="password" type="password" autocomplete="current-password" required autofocus><p id="error" role="alert"></p><button type="submit">Connect to MVS</button></form>
+    <small class="login-version">v1.00</small>
   </section>
   <section id="terminalView" hidden>
     <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span></div>
