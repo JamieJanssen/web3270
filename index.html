@@ -40,6 +40,7 @@
     .sessions-overlay{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:20px;background:#000a}.sessions-dialog{width:min(410px,100%);padding:22px;border:1px solid #39576c;border-radius:12px;background:#122232;color:#d8e9ed;box-shadow:0 22px 80px #000c}.sessions-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.sessions-heading h2{margin:0;font-size:19px}.sessions-heading button{background:#243d4e;color:#e2edef;padding:5px 11px;font-size:19px}.sessions-list{display:grid;gap:8px;max-height:55dvh;overflow:auto}.sessions-entry{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 12px;background:#1c3040;border-radius:7px;font-size:14px}.sessions-state{display:flex;align-items:center;gap:8px;color:#aabdc8;font-size:12px}.sessions-state i{width:10px;height:10px;border-radius:50%;background:#f2b960}.sessions-state.connected i{background:#6ad5bd}.sessions-empty{margin:0;color:#aabdc8;font-size:14px}
     .sessions-name{display:flex;align-items:center;gap:7px}.sessions-you{color:#6ad5bd;font-size:11px;font-weight:700}
     button.sessions-entry{width:100%;border:1px solid transparent;color:#d8e9ed;text-align:left;cursor:pointer}button.sessions-entry:hover,button.sessions-entry:focus-visible{background:#29475b;border-color:#6ad5bd}button.sessions-entry:disabled{cursor:wait;opacity:.7}
+    .toolbar .zoom-controls button:disabled{opacity:.35;cursor:default}
     .xterm{flex:none;transform-origin:center center}.xterm .xterm-viewport{scrollbar-width:none!important}.xterm .xterm-viewport::-webkit-scrollbar{display:none} [hidden]{display:none!important}
     #terminalView:fullscreen{grid-template-rows:minmax(0,1fr) auto;background:#0a1018;padding:8px 12px 3px;width:100%;height:100%;overflow:hidden}
     #terminalView:fullscreen #screen{grid-row:1;height:auto;min-height:0}
@@ -65,10 +66,10 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.21</small></div>
+    </form><small class="login-version">v1.22</small></div>
   </section>
   <section id="terminalView" hidden>
-<div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
+<div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite" title="Stretch to fill screen">Stretch</output><button id="zoomIn" type="button" disabled aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
     <div class="pf-bar" id="pfBar" role="group" aria-label="3270 function keys"><div class="pf-popover" id="pfPopover" role="group" aria-label="All 3270 PF keys" hidden></div></div>
     <div id="screen"></div>
     <div id="sessionsOverlay" class="sessions-overlay" hidden><section class="sessions-dialog" role="dialog" aria-modal="true" aria-labelledby="sessionsTitle"><div class="sessions-heading"><h2 id="sessionsTitle">MVS Sessions</h2><button id="sessionsClose" type="button" aria-label="Close sessions">×</button></div><div id="sessionsList" class="sessions-list" aria-live="polite"></div></section></div>
@@ -349,12 +350,12 @@
     }else if(delta>0 && zoom===100 && proportionalZoom){
       proportionalZoom=false;
     }else{
-      zoom=Math.max(50,Math.min(150,zoom+delta));
+      zoom=Math.max(50,Math.min(100,zoom+delta));
     }
-    $('zoomValue').textContent=proportionalZoom && zoom===100?'Fit':zoom+'%';
+    $('zoomValue').textContent=zoom===100?(proportionalZoom?'Fit':'Stretch'):zoom+'%';
     $('zoomValue').title=proportionalZoom?'Proportional scaling':'Stretch to fill screen';
     $('zoomOut').disabled=zoom===50;
-    $('zoomIn').disabled=zoom===150;
+    $('zoomIn').disabled=zoom===100 && !proportionalZoom;
     applyStretch();
     if(term)term.focus();
   }
