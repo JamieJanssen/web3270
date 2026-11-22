@@ -8,17 +8,17 @@
   <style>
     :root {color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
     *{box-sizing:border-box}body{margin:0;background:#0a1018;color:#d8e9ed;min-height:100vh}
-    header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #263849;background:#0e1925}
+    header{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #263849;background:#0e1925}
     .brand{font-weight:700;letter-spacing:.12em}.brand span{color:#6ad5bd}small{color:#91a6b8}
-    main{display:grid;place-items:center;min-height:calc(100vh - 64px);padding:16px}
+    main{display:grid;place-items:center;min-height:calc(100vh - 44px);padding:8px 12px}
     .card{width:min(100%,390px);padding:32px;border:1px solid #294154;border-radius:14px;background:#122232;box-shadow:0 22px 70px #0006}
     h1{font-size:24px;margin:0 0 8px}p{color:#91a6b8;line-height:1.5}label{display:block;font-size:13px;margin:28px 0 9px}
     input{width:100%;background:#091521;border:1px solid #39576c;border-radius:7px;color:white;padding:13px;font:inherit}
     input:focus{outline:2px solid #6ad5bd}button{border:0;border-radius:7px;background:#6ad5bd;color:#071a1c;font-weight:700;padding:12px 19px;cursor:pointer}
     button:hover{background:#9df0db}button.secondary{background:#243d4e;color:#e2edef}#error{color:#ff9e9e;min-height:1.5em}
-    #terminalView{width:100%;align-self:stretch;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;column-gap:12px}#screen{grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:hidden;box-shadow:0 20px 70px #0008;height:max(320px,calc(100dvh - 205px))}#terminalView>p{grid-column:1/-1;grid-row:3}
-    .toolbar{grid-column:2;grid-row:1;display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px;gap:10px}.toolbar-actions{display:flex;gap:8px;align-items:center}.dot{display:inline-block;flex:none;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14;margin:0 5px 0 8px}
-    .pf-bar{grid-column:1;grid-row:1;align-self:center;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px;justify-content:flex-start;min-width:0}.pf-bar::-webkit-scrollbar{display:none}.pf-bar button{flex:0 0 auto;min-width:50px;padding:10px 12px;background:#243d4e;color:#e2edef}.pf-bar button.pf-special{min-width:68px;font-weight:800}.pf-bar button:active{background:#6ad5bd;color:#071a1c}
+    #terminalView{width:100%;align-self:stretch;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;column-gap:12px}#screen{grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:hidden;box-shadow:0 20px 70px #0008;height:max(320px,calc(100dvh - 145px))}#terminalView>p{grid-column:1/-1;grid-row:3;margin:8px 0 0}
+    .toolbar{grid-column:2;grid-row:1;display:flex;justify-content:flex-end;align-items:center;margin-bottom:4px;gap:8px}.toolbar-actions{display:flex;gap:6px;align-items:center}.toolbar button{padding:9px 13px}.dot{display:inline-block;flex:none;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14;margin:0 5px 0 8px}
+    .pf-bar{grid-column:1;grid-row:1;align-self:center;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 4px;justify-content:flex-start;min-width:0}.pf-bar::-webkit-scrollbar{display:none}.pf-bar button{flex:0 0 auto;min-width:50px;padding:9px 12px;background:#243d4e;color:#e2edef}.pf-bar button.pf-special{min-width:68px;font-weight:800}.pf-bar button:active{background:#6ad5bd;color:#071a1c}
     .xterm{flex:none;transform-origin:center center}.xterm .xterm-viewport{scrollbar-width:none!important}.xterm .xterm-viewport::-webkit-scrollbar{display:none} [hidden]{display:none!important}
     #terminalView:fullscreen{grid-template-rows:minmax(0,1fr) auto;background:#0a1018;padding:12px;width:100%;height:100%;overflow:hidden}
     #terminalView:fullscreen #screen{grid-row:1;height:auto;min-height:0}
