@@ -10,7 +10,7 @@ The website login username selects a separate persistent c3270 session (up to ei
 
 Closing a tab, refreshing the page, or logging out of the website does not immediately disconnect that user's MVS session. Reconnecting with the same username takes over its terminal and replays recent ANSI output. After **60 minutes with no browser attached**, that c3270 process is terminated. Set `session_timeout_minutes` in `config.json` to change that limit (default: 60). `Disconnect` terminates only the selected username's MVS session; reloading then starts a fresh one. Restarting Python/Jester ends **all** sessions. For sessions with more than 1 MiB of accumulated terminal output, screen replay is best-effort; the live MVS connection remains active.
 
-Click the green/red status dot to open a read-only **MVS Sessions** popup. `Connected` means a browser WebSocket is currently attached to that username's c3270 process; `Idle` means the terminal process is retained for reconnection. These are web terminal states, **not** proof that a TSO user is logged in within MVS. Only authenticated visitors can query the session list (`GET /sessions`).
+Hover over the green/red status dot to see the current website username and connection status. Click it to open a read-only **MVS Sessions** popup, where the current username appears in bold with a `(You)` label. `Connected` means a browser WebSocket is currently attached to that username's c3270 process; `Idle` means the terminal process is retained for reconnection. These are web terminal states, **not** proof that a TSO user is logged in within MVS. Only authenticated visitors can query the session list (`GET /sessions`).
 
 ## Directory layout on Jester
 
