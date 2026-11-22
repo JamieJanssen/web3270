@@ -60,15 +60,15 @@
     <div class="win-title">Log On to MVS</div>
     <div class="win-banner"><span class="win-logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="win-wordmark"><div><span class="win-word">Windows</span> <span class="win-year">2000</span></div><div class="win-edition">Professional</div><div class="win-subtitle">Built on NT Technology</div></div></div>
     <div class="win-body"><form id="loginForm">
-      <div class="win-row"><label for="username">User name:</label><input id="username" name="username" autocomplete="username" value="Admin" required></div>
+      <div class="win-row"><label for="username">User name:</label><input id="username" name="username" autocomplete="username" required></div>
       <div class="win-row"><label for="password">Password:</label><input id="password" type="password" autocomplete="current-password" required autofocus></div>
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.16</small></div>
+    </form><small class="login-version">v1.17</small></div>
   </section>
   <section id="terminalView" hidden>
-    <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
+<div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
     <div class="pf-bar" id="pfBar" role="group" aria-label="3270 function keys"><div class="pf-popover" id="pfPopover" role="group" aria-label="All 3270 PF keys" hidden></div></div>
     <div id="screen"></div>
     <div id="sessionsOverlay" class="sessions-overlay" hidden><section class="sessions-dialog" role="dialog" aria-modal="true" aria-labelledby="sessionsTitle"><div class="sessions-heading"><h2 id="sessionsTitle">MVS Sessions</h2><button id="sessionsClose" type="button" aria-label="Close sessions">×</button></div><div id="sessionsList" class="sessions-list" aria-live="polite"></div></section></div>
@@ -290,15 +290,6 @@
     }
   });
   $('logout').addEventListener('click',async()=>{manuallyDisconnected=true;if(reconnectTimer)clearTimeout(reconnectTimer);await exitTerminalFullscreen();if(socket)socket.close();if(screenObserver){screenObserver.disconnect();screenObserver=null;}if(term){term.dispose();term=null;}$('screen').replaceChildren();await fetch(base+'logout',{method:'POST'});showLogin();});
-  $('disconnect').addEventListener('click',async()=>{
-    if(!confirm('Disconnect the MVS session? Unsaved work in MVS may be lost.'))return;
-    const result=await fetch(base+'disconnect',{method:'POST'});
-    if(!result.ok){alert('Could not disconnect MVS.');return;}
-    manuallyDisconnected=true;
-    if(reconnectTimer)clearTimeout(reconnectTimer);
-    if(socket)socket.close();
-    if(term)term.write('\r\n\r\nMVS disconnected. Reload this page to start a new session.\r\n');
-  });
   $('fullscreen').addEventListener('click',async()=>{
     try{
       if(document.fullscreenElement || $('terminalView').classList.contains('pseudo-fullscreen')){
