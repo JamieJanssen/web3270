@@ -25,9 +25,9 @@
     #terminalView:fullscreen > p{display:none}
     #terminalView.pseudo-fullscreen{position:fixed;inset:0;z-index:1000;grid-template-rows:minmax(0,1fr) auto;background:#0a1018;padding:8px 12px 0;width:100%;height:100dvh;overflow:hidden}
     #terminalView.pseudo-fullscreen #screen{grid-row:1;height:auto;min-height:0}
-    #terminalView:fullscreen .pf-bar,#terminalView.pseudo-fullscreen .pf-bar{grid-column:1;grid-row:2;align-self:center;padding:4px 0 0}
+    #terminalView:fullscreen .pf-bar,#terminalView.pseudo-fullscreen .pf-bar{grid-column:1;grid-row:2;align-self:center;padding:4px 0 8px 18px}
     #terminalView:fullscreen .pf-popover,#terminalView.pseudo-fullscreen .pf-popover{top:auto;bottom:calc(100% + 6px)}
-    #terminalView:fullscreen .toolbar,#terminalView.pseudo-fullscreen .toolbar{grid-column:2;grid-row:2;align-self:center;margin:0;padding:0}
+    #terminalView:fullscreen .toolbar,#terminalView.pseudo-fullscreen .toolbar{grid-column:2;grid-row:2;align-self:center;margin:0;padding:0 18px 8px 0}
     #terminalView.pseudo-fullscreen > p{display:none}
     @media(max-width:700px){header{padding:0 16px}main{padding:12px}.card{padding:24px}#screen{padding:8px}.pf-bar{justify-content:flex-start}}
   </style>
