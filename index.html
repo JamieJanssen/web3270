@@ -12,7 +12,19 @@
     .brand{font-weight:700;letter-spacing:.12em}.brand span{color:#6ad5bd}small{color:#91a6b8}
     main{display:grid;place-items:center;min-height:calc(100vh - 44px);padding:8px 12px}
     .card{width:min(100%,390px);padding:32px;border:1px solid #294154;border-radius:14px;background:#122232;box-shadow:0 22px 70px #0006}
-    .login-version{display:block;margin-top:18px;text-align:right;font-size:11px;opacity:.65;letter-spacing:.04em}
+    .login-version{display:block;text-align:right;font-size:10px;color:#555;opacity:.8}
+    body:has(#loginView:not([hidden])){background:#3b71a7;color:#000;font-family:Tahoma,'MS Sans Serif',Arial,sans-serif;color-scheme:light}
+    body:has(#loginView:not([hidden])) header{display:none}
+    body:has(#loginView:not([hidden])) main{min-height:100dvh}
+    #loginView.win2000{width:min(415px,calc(100vw - 24px));padding:0;border:2px solid;border-color:#fff #333 #333 #fff;border-radius:0;background:#d4d0c8;box-shadow:1px 1px 0 #777;font-size:11px;color:#000}
+    .win-title{height:19px;display:flex;align-items:center;padding:0 4px;background:linear-gradient(90deg,#0a246a,#5e9ad5);color:#fff;font-size:11px;font-weight:700}
+    .win-banner{height:92px;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(#fff 0%,#fff 84%,#dbe3e4 85%,#247aa7 100%);border-bottom:1px solid #757575}
+    .win-logo{display:grid;grid-template-columns:repeat(2,17px);grid-template-rows:repeat(2,17px);gap:2px;transform:skew(-8deg) rotate(-7deg);filter:drop-shadow(4px 4px 0 #ee7900)}
+    .win-logo i:nth-child(1){background:#ec3425}.win-logo i:nth-child(2){background:#58a431}.win-logo i:nth-child(3){background:#2876bf}.win-logo i:nth-child(4){background:#f6c330}
+    .win-wordmark{font-family:Arial,sans-serif;line-height:.93;letter-spacing:-1.5px}.win-wordmark .win-word{font-size:30px;font-weight:900}.win-wordmark .win-year{font-size:24px;font-weight:400}.win-wordmark .win-edition{font-size:18px;font-weight:900;letter-spacing:-.8px}.win-wordmark .win-subtitle{font-size:11px;letter-spacing:0;text-align:center;margin-top:3px}
+    .win-body{padding:16px 11px 10px}.win-row{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:6px;margin:4px 0 8px}.win-row label{margin:0;font-size:11px}.win-row input{height:22px;border:2px solid;border-color:#808080 #fff #fff #808080;border-radius:0;background:#fff;color:#000;padding:1px 5px;font:12px Tahoma,Arial,sans-serif;outline:none}.win-row input:focus{outline:1px dotted #222;outline-offset:-4px}
+    .win-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:15px}.win-actions button{min-width:73px;height:24px;padding:2px 8px;border:2px solid;border-color:#fff #555 #555 #fff;border-radius:0;background:#d4d0c8;color:#000;font:11px Tahoma,Arial,sans-serif;box-shadow:1px 1px 0 #222}.win-actions button:active{border-color:#555 #fff #fff #555;box-shadow:none}.win-actions button:disabled{color:#777;text-shadow:1px 1px #fff;cursor:default}.win-actions button:focus-visible{outline:1px dotted #000;outline-offset:-5px}
+    #loginView #error{color:#a00000;min-height:0;margin:2px 0 0 78px;font-size:11px;line-height:1.2}#loginView #error:empty{display:none}
     h1{font-size:24px;margin:0 0 8px}p{color:#91a6b8;line-height:1.5}label{display:block;font-size:13px;margin:28px 0 9px}
     input{width:100%;background:#091521;border:1px solid #39576c;border-radius:7px;color:white;padding:13px;font:inherit}
     input:focus{outline:2px solid #6ad5bd}button{border:0;border-radius:7px;background:#6ad5bd;color:#071a1c;font-weight:700;padding:12px 19px;cursor:pointer}
@@ -30,16 +42,21 @@
     #terminalView:fullscreen .pf-popover,#terminalView.pseudo-fullscreen .pf-popover{top:auto;bottom:calc(100% + 6px)}
     #terminalView:fullscreen .toolbar,#terminalView.pseudo-fullscreen .toolbar{grid-column:2;grid-row:2;align-self:center;margin:0;padding:0 18px 8px 0}
     #terminalView.pseudo-fullscreen > p{display:none}
-    @media(max-width:700px){header{padding:0 16px}main{padding:8px}.card{padding:24px}#screen{padding:8px}.pf-bar{justify-content:flex-start}}
+    @media(max-width:700px){header{padding:0 16px}main{padding:8px}.card{padding:24px}#screen{padding:8px}.pf-bar{justify-content:flex-start}#loginView.win2000{padding:0}.win-wordmark .win-word{font-size:27px}.win-wordmark .win-year{font-size:21px}}
   </style>
 </head>
 <body>
 <header><div class="brand">JAMIE<span>JETS</span> / MVS</div><small>IBM 3270 TERMINAL</small></header>
 <main>
-  <section id="loginView" class="card" hidden>
-    <h1>Welcome back</h1><p>Sign in to connect to the MVS mainframe.</p>
-    <form id="loginForm"><label for="password">Access password</label><input id="password" type="password" autocomplete="current-password" required autofocus><p id="error" role="alert"></p><button type="submit">Connect to MVS</button></form>
-    <small class="login-version">v1.05</small>
+  <section id="loginView" class="win2000" hidden>
+    <div class="win-title">Log On to MVS</div>
+    <div class="win-banner"><span class="win-logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="win-wordmark"><div><span class="win-word">Windows</span> <span class="win-year">2000</span></div><div class="win-edition">Professional</div><div class="win-subtitle">Built on NT Technology</div></div></div>
+    <div class="win-body"><form id="loginForm">
+      <div class="win-row"><label for="username">User name:</label><input id="username" name="username" autocomplete="username" value="Admin" required></div>
+      <div class="win-row"><label for="password">Password:</label><input id="password" type="password" autocomplete="current-password" required autofocus></div>
+      <p id="error" role="alert"></p>
+      <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
+    </form><small class="login-version">v1.06</small></div>
   </section>
   <section id="terminalView" hidden>
     <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span></div>
