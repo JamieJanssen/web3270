@@ -18,14 +18,15 @@
     button:hover{background:#9df0db}button.secondary{background:#243d4e;color:#e2edef}#error{color:#ff9e9e;min-height:1.5em}
     #terminalView{width:100%;align-self:stretch;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;column-gap:12px}#screen{grid-column:1/-1;grid-row:2;display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:hidden;box-shadow:0 20px 70px #0008;height:max(320px,calc(100dvh - 145px))}#terminalView>p{grid-column:1/-1;grid-row:3;margin:8px 0 0}
     .toolbar{grid-column:2;grid-row:1;display:flex;justify-content:flex-end;align-items:center;margin-bottom:4px;gap:8px}.toolbar-actions{display:flex;gap:6px;align-items:center}.toolbar button{padding:9px 13px}.toolbar .icon-button{display:inline-flex;align-items:center;justify-content:center;min-width:39px;min-height:36px;padding:6px;font-size:23px;line-height:1}.icon-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.zoom-controls{display:flex;align-items:center;gap:0;border-radius:7px;background:#243d4e;white-space:nowrap}.toolbar .zoom-controls button{min-width:32px;padding:9px 8px;border-radius:7px;background:transparent;color:#e2edef;font-size:19px;line-height:1}.zoom-controls output{min-width:45px;text-align:center;font-size:12px;font-weight:700}.dot{display:inline-block;flex:none;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14;margin:0 5px 0 8px}
-    .pf-bar{grid-column:1;grid-row:1;align-self:center;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 4px;justify-content:flex-start;min-width:0}.pf-bar::-webkit-scrollbar{display:none}.pf-bar button{flex:0 0 auto;min-width:50px;padding:9px 12px;background:#243d4e;color:#e2edef}.pf-bar button.pf-special{min-width:68px;font-weight:800}.pf-bar button:active{background:#6ad5bd;color:#071a1c}
+    .pf-bar{grid-column:1;grid-row:1;align-self:center;display:flex;gap:6px;position:relative;padding:2px 0 4px;justify-content:flex-start;min-width:0}.pf-bar button{flex:0 0 auto;min-width:50px;padding:9px 12px;background:#243d4e;color:#e2edef}.pf-bar button.pf-special{min-width:68px;font-weight:800}.pf-bar button:active{background:#6ad5bd;color:#071a1c}.pf-bar .pf-more{font-size:20px;min-width:44px;padding:6px 12px}.pf-popover{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;width:min(340px,calc(100vw - 32px));padding:12px;background:#122232;border:1px solid #39576c;border-radius:10px;box-shadow:0 15px 45px #000b}.pf-popover button{min-width:0;padding:12px 5px}
     .xterm{flex:none;transform-origin:center center}.xterm .xterm-viewport{scrollbar-width:none!important}.xterm .xterm-viewport::-webkit-scrollbar{display:none} [hidden]{display:none!important}
     #terminalView:fullscreen{grid-template-rows:minmax(0,1fr) auto;background:#0a1018;padding:8px 12px 3px;width:100%;height:100%;overflow:hidden}
     #terminalView:fullscreen #screen{grid-row:1;height:auto;min-height:0}
     #terminalView:fullscreen > p{display:none}
-    #terminalView.pseudo-fullscreen{position:fixed;inset:0;top:var(--visual-top,0px);z-index:1000;grid-template-rows:minmax(0,1fr) auto;background:#0a1018;padding:8px 12px 3px;width:100%;height:var(--visual-height,100dvh);overflow:hidden}
+    #terminalView.pseudo-fullscreen{position:fixed;inset:0;z-index:1000;grid-template-rows:minmax(0,1fr) auto;background:#0a1018;padding:8px 12px 0;width:100%;height:100dvh;overflow:hidden}
     #terminalView.pseudo-fullscreen #screen{grid-row:1;height:auto;min-height:0}
     #terminalView:fullscreen .pf-bar,#terminalView.pseudo-fullscreen .pf-bar{grid-column:1;grid-row:2;align-self:center;padding:4px 0 0}
+    #terminalView:fullscreen .pf-popover,#terminalView.pseudo-fullscreen .pf-popover{top:auto;bottom:calc(100% + 6px)}
     #terminalView:fullscreen .toolbar,#terminalView.pseudo-fullscreen .toolbar{grid-column:2;grid-row:2;align-self:center;margin:0;padding:0}
     #terminalView.pseudo-fullscreen > p{display:none}
     @media(max-width:700px){header{padding:0 16px}main{padding:12px}.card{padding:24px}#screen{padding:8px}.pf-bar{justify-content:flex-start}}
@@ -40,8 +41,8 @@
   </section>
   <section id="terminalView" hidden>
     <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span></div>
-    <div class="pf-bar" id="pfBar" role="group" aria-label="3270 function keys"></div>
-    <div id="screen"></div><p>3270 keyboard: Tab, Enter, F1–F12 · iPad: Cmd+1…9 = PF1…9, Cmd+0 = PF10, Cmd+- = PF11, Cmd+= = PF12 · Paste: Ctrl+V</p>
+    <div class="pf-bar" id="pfBar" role="group" aria-label="3270 function keys"><div class="pf-popover" id="pfPopover" role="group" aria-label="All 3270 PF keys" hidden></div></div>
+    <div id="screen"></div><p>3270 keyboard: Tab, Enter, PF1–PF24 via + · iPad: Cmd+1…9 = PF1…9, Cmd+0 = PF10, Cmd+- = PF11, Cmd+= = PF12 · Paste: Ctrl+V</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
@@ -65,19 +66,45 @@
     let s='';for(const b of bytes)s+=String.fromCharCode(b);
     socket.send(btoa(s));
   }
-  for(let n=1;n<=12;n++){
+  function sendPF(n){
+    const low=(n-1)%12+1;
+    const key=low===10?'0':low===11?'-':low===12?'=':String(low);
+    // c3270's default keymap uses Ctrl+A followed by F1–F12 for PF13–PF24.
+    sendTerminalInput((n>12?'\x01':'')+functionKeys[key]);
+    if(term)term.focus();
+  }
+  function pfButton(n){
     const button=document.createElement('button');
     button.type='button';
     button.textContent='PF'+n;
     if([3,7,8].includes(n))button.classList.add('pf-special');
     button.setAttribute('aria-label','Program Function '+n);
     button.addEventListener('click',()=>{
-      const key=n===10?'0':n===11?'-':n===12?'=':String(n);
-      sendTerminalInput(functionKeys[key]);
-      if(term)term.focus();
+      $('pfPopover').hidden=true;
+      $('pfMore').setAttribute('aria-expanded','false');
+      sendPF(n);
     });
-    $('pfBar').appendChild(button);
+    return button;
   }
+  for(const n of [3,7,8])$('pfBar').insertBefore(pfButton(n),$('pfPopover'));
+  const more=document.createElement('button');
+  more.type='button';more.id='pfMore';more.textContent='+';more.className='pf-more';
+  more.setAttribute('aria-label','Show all 24 PF keys');
+  more.setAttribute('aria-expanded','false');
+  more.setAttribute('aria-controls','pfPopover');
+  more.addEventListener('click',()=>{
+    const show=$('pfPopover').hidden;
+    $('pfPopover').hidden=!show;
+    more.setAttribute('aria-expanded',String(show));
+  });
+  $('pfBar').insertBefore(more,$('pfPopover'));
+  for(let n=1;n<=24;n++)$('pfPopover').appendChild(pfButton(n));
+  document.addEventListener('pointerdown',event=>{
+    if(!$('pfBar').contains(event.target)){
+      $('pfPopover').hidden=true;
+      more.setAttribute('aria-expanded','false');
+    }
+  });
   document.addEventListener('keydown',event=>{
     if(!isIPad || !term || $('terminalView').hidden || !event.metaKey || event.ctrlKey || event.altKey || event.shiftKey)return;
     const key=event.key;
@@ -95,10 +122,6 @@
     requestAnimationFrame(()=>{resizeTerminal();if(term)term.focus();});
   }
   function updateVisualViewport(){
-    const viewport=window.visualViewport;
-    if(!viewport)return;
-    document.documentElement.style.setProperty('--visual-height',`${viewport.height}px`);
-    document.documentElement.style.setProperty('--visual-top',`${viewport.offsetTop}px`);
     resizeTerminal();
   }
   if(window.visualViewport){
