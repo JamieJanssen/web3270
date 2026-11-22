@@ -17,17 +17,17 @@
     input:focus{outline:2px solid #6ad5bd}button{border:0;border-radius:7px;background:#6ad5bd;color:#071a1c;font-weight:700;padding:12px 19px;cursor:pointer}
     button:hover{background:#9df0db}button.secondary{background:#243d4e;color:#e2edef}#error{color:#ff9e9e;min-height:1.5em}
     #terminalView{width:100%;align-self:stretch}#screen{display:flex;align-items:center;justify-content:center;background:#252b2d;border:1px solid #345061;border-radius:9px;padding:14px;overflow:hidden;box-shadow:0 20px 70px #0008;height:max(320px,calc(100dvh - 255px))}
-    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}.toolbar-actions{display:flex;gap:8px;align-items:center}.dot{display:inline-block;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14}
+    .toolbar{display:flex;justify-content:flex-end;align-items:center;margin-bottom:14px;gap:10px}.toolbar-actions{display:flex;gap:8px;align-items:center}.dot{display:inline-block;flex:none;background:#eeae59;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px #ffffff14;margin:0 5px 0 8px}
     .pf-bar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px;justify-content:flex-start;min-width:0}.pf-bar::-webkit-scrollbar{display:none}.pf-bar button{flex:0 0 auto;min-width:50px;padding:10px 12px;background:#243d4e;color:#e2edef}.pf-bar button.pf-special{min-width:68px;font-weight:800}.pf-bar button:active{background:#6ad5bd;color:#071a1c}
     .xterm{flex:none;transform-origin:center center}.xterm .xterm-viewport{scrollbar-width:none!important}.xterm .xterm-viewport::-webkit-scrollbar{display:none} [hidden]{display:none!important}
     #terminalView:fullscreen{display:flex;flex-direction:column;background:#0a1018;padding:12px;width:100%;height:100%;overflow:hidden}
     #terminalView:fullscreen #screen{flex:1;height:auto;min-height:0}
     #terminalView:fullscreen .toolbar{flex:none}
     #terminalView:fullscreen > p{display:none}
-    #terminalView.pseudo-fullscreen{position:fixed;inset:0;z-index:1000;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;column-gap:12px;background:#0a1018;padding:12px;width:100%;height:100dvh;overflow:hidden}
-    #terminalView.pseudo-fullscreen .pf-bar{grid-column:1;grid-row:2;align-self:center;padding:8px 0 max(2px,env(safe-area-inset-bottom,0px))}
-    #terminalView.pseudo-fullscreen #screen{grid-column:1/-1;grid-row:1;height:auto;min-height:0}
-    #terminalView.pseudo-fullscreen .toolbar{grid-column:2;grid-row:2;justify-content:flex-end;align-self:center;margin:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+    #terminalView.pseudo-fullscreen{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;background:#0a1018;padding:12px;width:100%;height:100dvh;overflow:hidden}
+    #terminalView.pseudo-fullscreen .pf-bar{flex:none;order:0;justify-content:flex-start}
+    #terminalView.pseudo-fullscreen #screen{flex:1;order:1;height:auto;min-height:0}
+    #terminalView.pseudo-fullscreen .toolbar{flex:none;order:2;justify-content:flex-end;margin:10px 4px 0;padding-bottom:env(safe-area-inset-bottom,0px)}
     #terminalView.pseudo-fullscreen > p{display:none}
     @media(max-width:700px){header{padding:0 16px}main{padding:12px}.card{padding:24px}#screen{padding:8px}.pf-bar{justify-content:flex-start}}
   </style>
@@ -40,7 +40,7 @@
     <form id="loginForm"><label for="password">Access password</label><input id="password" type="password" autocomplete="current-password" required autofocus><p id="error" role="alert"></p><button type="submit">Connect to MVS</button></form>
   </section>
   <section id="terminalView" hidden>
-    <div class="toolbar"><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span><div class="toolbar-actions"><button class="secondary" id="displayMode" type="button" aria-pressed="true" title="Toggle stretched terminal display">Stretch: On</button><button class="secondary" id="fullscreen" type="button" title="Toggle fullscreen (Esc to exit)">Fullscreen</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary" id="logout">Log out</button></div></div>
+    <div class="toolbar"><div class="toolbar-actions"><button class="secondary" id="displayMode" type="button" aria-pressed="true" title="Toggle stretched terminal display">Stretch: On</button><button class="secondary" id="fullscreen" type="button" title="Toggle fullscreen (Esc to exit)">Fullscreen</button><button class="secondary" id="disconnect" title="End MVS session">Disconnect</button><button class="secondary" id="logout">Log out</button></div><span class="dot" id="dot" role="status" aria-label="Connecting" title="Connecting"></span></div>
     <div class="pf-bar" id="pfBar" role="group" aria-label="3270 function keys"></div>
     <div id="screen"></div><p>3270 keyboard: Tab, Enter, F1–F12 · iPad: Cmd+1…9 = PF1…9, Cmd+0 = PF10, Cmd+- = PF11, Cmd+= = PF12 · Paste: Ctrl+V</p>
   </section>
@@ -51,6 +51,7 @@
   const $ = id => document.getElementById(id);
   const base = location.pathname.replace(/\/?$/, '/');
   let socket, term, screenObserver;
+  let backgroundAt=0, reconnectTimer=null, manuallyDisconnected=false;
   let resizeTerminal=()=>{};
   const isIPad=/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
   let stretch = true;
@@ -97,7 +98,7 @@
     syncFullscreen();
   }
   function showLogin(){ $('terminalView').hidden=true; $('loginView').hidden=false; $('password').focus(); }
-  function showTerminal(){ $('loginView').hidden=true; $('terminalView').hidden=false; connect(); }
+  function showTerminal(){ $('loginView').hidden=true; $('terminalView').hidden=false; manuallyDisconnected=false; connect(); }
   async function check(){try{const r=await fetch(base+'status',{cache:'no-store'});const j=await r.json();j.authenticated?showTerminal():showLogin();}catch{showLogin();$('error').textContent='Server unavailable.';}}
   $('loginForm').addEventListener('submit',async e=>{
     e.preventDefault();$('error').textContent='';
@@ -105,11 +106,13 @@
       if(!r.ok)throw Error('Incorrect password or login unavailable');$('password').value='';showTerminal();
     }catch(err){$('error').textContent=err.message;}
   });
-  $('logout').addEventListener('click',async()=>{await exitTerminalFullscreen();if(socket)socket.close();if(screenObserver){screenObserver.disconnect();screenObserver=null;}if(term){term.dispose();term=null;}$('screen').replaceChildren();await fetch(base+'logout',{method:'POST'});showLogin();});
+  $('logout').addEventListener('click',async()=>{manuallyDisconnected=true;if(reconnectTimer)clearTimeout(reconnectTimer);await exitTerminalFullscreen();if(socket)socket.close();if(screenObserver){screenObserver.disconnect();screenObserver=null;}if(term){term.dispose();term=null;}$('screen').replaceChildren();await fetch(base+'logout',{method:'POST'});showLogin();});
   $('disconnect').addEventListener('click',async()=>{
     if(!confirm('Disconnect the MVS session? Unsaved work in MVS may be lost.'))return;
     const result=await fetch(base+'disconnect',{method:'POST'});
     if(!result.ok){alert('Could not disconnect MVS.');return;}
+    manuallyDisconnected=true;
+    if(reconnectTimer)clearTimeout(reconnectTimer);
     if(socket)socket.close();
     if(term)term.write('\r\n\r\nMVS disconnected. Reload this page to start a new session.\r\n');
   });
@@ -141,6 +144,30 @@
     $('displayMode').setAttribute('aria-pressed',String(stretch));
     applyStretch();
   });
+  function scheduleReconnect(){
+    if(reconnectTimer || manuallyDisconnected || $('terminalView').hidden || document.visibilityState==='hidden')return;
+    reconnectTimer=setTimeout(()=>{
+      reconnectTimer=null;
+      if(!manuallyDisconnected && socket && socket.readyState===WebSocket.CLOSED)connect();
+    },1500);
+  }
+  function resumeTerminal(){
+    if(manuallyDisconnected || $('terminalView').hidden)return;
+    const wasAway=backgroundAt>0 && Date.now()-backgroundAt>1000;
+    backgroundAt=0;
+    if(socket && socket.readyState===WebSocket.CONNECTING)return;
+    if(!socket || socket.readyState!==WebSocket.OPEN || wasAway){
+      if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+      connect();
+    }else if(term){term.focus();}
+  }
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)backgroundAt=Date.now();
+    else resumeTerminal();
+  });
+  window.addEventListener('blur',()=>{if(!backgroundAt)backgroundAt=Date.now();});
+  window.addEventListener('focus',resumeTerminal);
+  window.addEventListener('online',resumeTerminal);
   function applyStretch(){
     if(!term || !term.element)return;
     const surface=term.element;
@@ -156,6 +183,8 @@
     }
   }
   function connect(){
+    if(manuallyDisconnected || $('terminalView').hidden)return;
+    if(socket && socket.readyState!==WebSocket.CLOSED)socket.close();
     if(screenObserver){screenObserver.disconnect();screenObserver=null;}
     if(term){term.dispose();$('screen').replaceChildren();}
     term=new Terminal({cols:80,rows:24,fontFamily:'monospace',fontSize:16,theme:{background:'#252b2d',foreground:'#a9ead2',cursor:'#73e8c5'},cursorBlink:true,scrollback:0});
@@ -197,9 +226,9 @@
     socket=new WebSocket(proto+'//'+location.host+base+'ws');
     const currentSocket=socket;
     socket.onopen=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#6ad5bd';$('dot').setAttribute('aria-label','Connected');$('dot').title='Connected'; };
-    socket.onclose=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Disconnected');$('dot').title='Disconnected'; };
+    socket.onclose=event=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Disconnected');$('dot').title='Disconnected';if(event.code===4001){manuallyDisconnected=true;$('dot').title='Session opened on another device';}else scheduleReconnect(); };
     socket.onerror=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';$('dot').setAttribute('aria-label','Connection error');$('dot').title='Connection error'; };
-    socket.onmessage=e=>{const binary=atob(e.data);const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));term.write(bytes);};
+    socket.onmessage=e=>{if(socket!==currentSocket || !term)return;const binary=atob(e.data);const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));term.write(bytes);};
     term.onData(sendTerminalInput);
   }
   check();
