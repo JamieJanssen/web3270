@@ -197,7 +197,7 @@ class PersistentTerminal:
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
         try:
             process = await asyncio.create_subprocess_exec(
-                "c3270", "-model", "3279-2", f'{config["mvs_host"]}:{config["mvs_port"]}',
+                "c3270", "-reconnect", "-model", "3279-2", f'{config["mvs_host"]}:{config["mvs_port"]}',
                 stdin=slave, stdout=slave, stderr=slave,
                 env={**os.environ, "TERM": "xterm"}, start_new_session=True,
             )
@@ -239,7 +239,7 @@ class PersistentTerminal:
         self.client = None
         if self.timer:
             self.timer.cancel()
-        delay = int(self.app["config"].get("session_timeout_minutes", 60)) * 60
+        delay = int(self.app["config"].get("session_timeout_minutes", 240)) * 60
         self.timer = asyncio.get_running_loop().call_later(delay, lambda: asyncio.create_task(self.expire()))
 
     async def expire(self):
@@ -366,7 +366,7 @@ def main():
         sys.exit("Configure a random session secret first")
     if cfg["listen_host"] not in ("127.0.0.1", "::1"):
         sys.exit("For safety, listen_host must be localhost")
-    if not 1 <= int(cfg.get("session_timeout_minutes", 60)) <= 1440:
+    if not 1 <= int(cfg.get("session_timeout_minutes", 240)) <= 1440:
         sys.exit("session_timeout_minutes must be between 1 and 1440")
     app = web.Application(client_max_size=2048)
     app["config"] = cfg
