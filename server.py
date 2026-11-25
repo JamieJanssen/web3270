@@ -310,6 +310,7 @@ async def terminal(request):
     try:
         async with app["terminal_lock"]:
             session = app["terminal_sessions"].get(username)
+            new_terminal = False
             if session is None or session.process is None or session.process.returncode is not None:
                 if session is not None:
                     await session.stop()
@@ -319,6 +320,11 @@ async def terminal(request):
                 session = PersistentTerminal(app, username)
                 await session.start()
                 app["terminal_sessions"][username] = session
+                new_terminal = True
+            if new_terminal:
+                # A non-base64 control frame tells the browser to clear once,
+                # after the first new terminal screen has finished rendering.
+                await ws.send_str("!web3270:new-terminal")
             await session.attach(ws)
         loop = asyncio.get_running_loop()
         async for message in ws:
