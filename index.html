@@ -64,7 +64,7 @@
       <label class="win-check" for="loginFullscreen"><input id="loginFullscreen" type="checkbox"><span>Log on full screen mode</span></label>
       <p id="error" role="alert"></p>
       <div class="win-actions"><button type="submit">OK</button><button type="reset">Cancel</button><button type="button" disabled>Shut Down...</button></div>
-    </form><small class="login-version">v1.32</small></div>
+    </form><small class="login-version">v1.33</small></div>
   </section>
   <section id="terminalView" hidden>
 <div class="toolbar"><div class="toolbar-actions"><div class="zoom-controls" role="group" aria-label="Terminal zoom"><button id="zoomOut" type="button" aria-label="Zoom out 10 percent" title="Zoom out">−</button><output id="zoomValue" aria-live="polite" title="Stretch to fill screen">Stretch</output><button id="zoomIn" type="button" disabled aria-label="Zoom in 10 percent" title="Zoom in">+</button></div><button class="secondary icon-button" id="fullscreen" type="button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button class="secondary icon-button" id="logout" type="button" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div><button class="dot" id="dot" type="button" aria-label="Show active sessions" title="Show active sessions"></button></div>
@@ -149,6 +149,11 @@
   let zoom = 100;
   let proportionalZoom = false;
   let terminalCaps = false;
+  let autoClearPending=false,autoClearTimer=null;
+  function cancelAutoClear(){
+    autoClearPending=false;
+    if(autoClearTimer!==null){clearTimeout(autoClearTimer);autoClearTimer=null;}
+  }
   const functionKeys={
     '1':'\x1bOP','2':'\x1bOQ','3':'\x1bOR','4':'\x1bOS',
     '5':'\x1b[15~','6':'\x1b[17~','7':'\x1b[18~','8':'\x1b[19~',
@@ -156,6 +161,8 @@
   };
   function sendTerminalInput(data){
     if(!socket || socket.readyState!==WebSocket.OPEN)return;
+    // Any user input takes priority over the automatic first-screen CLEAR.
+    cancelAutoClear();
     // Only change typed/pasted text, never escape sequences or c3270 Ctrl+A commands.
     if(terminalCaps && !/[\x1b\x01]/.test(data))data=data.replace(/[a-z]/g,c=>c.toUpperCase());
     const bytes=new TextEncoder().encode(data);
@@ -533,6 +540,7 @@
   }
   function connect(){
     if(manuallyDisconnected || $('terminalView').hidden)return;
+    cancelAutoClear();
     if(socket && socket.readyState!==WebSocket.CLOSED)socket.close();
     if(screenObserver){screenObserver.disconnect();screenObserver=null;}
     if(term){term.dispose();$('screen').replaceChildren();}
@@ -576,9 +584,23 @@
     socketConnectingSince=Date.now();
     const currentSocket=socket;
     socket.onopen=()=>{ if(socket!==currentSocket)return;socketConnectingSince=0;$('dot').style.background='#6ad5bd';updateDot('Connected'); };
-    socket.onclose=event=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';updateDot('Disconnected');if(event.code===4001){manuallyDisconnected=true;updateDot('Session opened on another device');}else scheduleReconnect(); };
+    socket.onclose=event=>{ if(socket!==currentSocket)return;cancelAutoClear();$('dot').style.background='#f38b86';updateDot('Disconnected');if(event.code===4001){manuallyDisconnected=true;updateDot('Session opened on another device');}else scheduleReconnect(); };
     socket.onerror=()=>{ if(socket!==currentSocket)return;$('dot').style.background='#f38b86';updateDot('Connection error'); };
-    socket.onmessage=e=>{if(socket!==currentSocket || !term)return;const binary=atob(e.data);const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));term.write(bytes);};
+    socket.onmessage=e=>{
+      if(socket!==currentSocket || !term)return;
+      if(e.data==='!web3270:new-terminal'){autoClearPending=true;return;}
+      const binary=atob(e.data);
+      const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
+      term.write(bytes);
+      if(autoClearPending){
+        if(autoClearTimer!==null)clearTimeout(autoClearTimer);
+        // Let c3270 finish drawing its initial screen before sending CLEAR.
+        autoClearTimer=setTimeout(()=>{
+          autoClearTimer=null;
+          if(socket===currentSocket && term)sendTerminalInput('\x01c');
+        },1400);
+      }
+    };
     term.onData(sendTerminalInput);
   }
   check();
